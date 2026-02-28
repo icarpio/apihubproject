@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Currency · API Ninjas Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  body { min-height:100vh; background:#080e02; color:#e8f5d0; font-family:'DM Sans',sans-serif; background-image:radial-gradient(ellipse at 40% 40%,rgba(132,204,22,0.1) 0%,transparent 60%); overflow-x:hidden; }
+  .back { position:fixed; top:14px; left:14px; z-index:100; text-decoration:none; color:#84cc16; font-size:0.78rem; letter-spacing:0.1em; text-transform:uppercase; background:rgba(8,14,2,0.85); padding:7px 14px; border-radius:100px; border:1px solid rgba(132,204,22,0.25); backdrop-filter:blur(8px); }
+  header { text-align:center; padding:72px 16px 36px; }
+  h1 { font-family:'Syne',sans-serif; font-size:clamp(2.2rem,9vw,5.5rem); font-weight:800; line-height:1.1; }
+  h1 .txt { background:linear-gradient(135deg,#84cc16,#22c55e); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .subtitle { margin-top:8px; color:rgba(232,245,208,0.38); font-size:clamp(0.65rem,2.5vw,0.82rem); letter-spacing:0.15em; text-transform:uppercase; }
+
+  .converter { max-width:520px; margin:32px auto; padding:0 16px 80px; }
+  .card { background:rgba(255,255,255,0.03); border:1px solid rgba(132,204,22,0.15); border-radius:18px; padding:26px 22px; }
+
+  .row-amount { margin-bottom:14px; }
+  .row-pair { display:flex; gap:8px; align-items:flex-end; margin-bottom:16px; }
+  .row-pair .field { flex:1; min-width:0; }
+
+  .field label { display:block; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.15em; color:rgba(232,245,208,0.38); margin-bottom:7px; }
+  .field input { width:100%; padding:11px 13px; background:rgba(255,255,255,0.05); border:1px solid rgba(132,204,22,0.2); border-radius:10px; color:#e8f5d0; font-family:'DM Sans',sans-serif; font-size:0.95rem; outline:none; transition:border-color 0.2s; }
+  .field input:focus { border-color:#84cc16; }
+  .swap-btn { width:38px; height:38px; background:rgba(132,204,22,0.1); border:1px solid rgba(132,204,22,0.2); border-radius:50%; color:#84cc16; font-size:1.1rem; cursor:pointer; flex-shrink:0; transition:all 0.2s; display:flex; align-items:center; justify-content:center; }
+  .swap-btn:hover { background:rgba(132,204,22,0.22); transform:rotate(180deg); }
+  .convert-btn { width:100%; padding:13px; background:linear-gradient(135deg,#84cc16,#22c55e); border:none; border-radius:12px; color:#080e02; font-family:'Syne',sans-serif; font-size:0.95rem; font-weight:700; cursor:pointer; transition:opacity 0.2s; }
+  .convert-btn:hover { opacity:0.9; }
+  .convert-btn:active { transform:scale(0.98); }
+
+  .result { margin-top:20px; text-align:center; padding:22px 16px; background:rgba(132,204,22,0.05); border:1px solid rgba(132,204,22,0.1); border-radius:14px; display:none; }
+  .result.visible { display:block; animation:fadeUp 0.35s ease; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  .result-label { font-size:0.8rem; color:rgba(232,245,208,0.4); margin-bottom:6px; }
+  .result-amount { font-family:'Syne',sans-serif; font-size:clamp(1.9rem,8vw,2.8rem); font-weight:800; color:#84cc16; line-height:1; }
+  .result-rate { margin-top:8px; font-size:0.76rem; color:rgba(132,204,22,0.5); }
+
+  .error-box { margin-top:14px; padding:12px 16px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); border-radius:10px; color:#ef4444; text-align:center; font-size:0.85rem; display:none; }
+  .error-box.visible { display:block; }
+
+  .popular { margin-top:22px; }
+  .popular-label { font-size:0.7rem; text-transform:uppercase; letter-spacing:0.15em; color:rgba(232,245,208,0.28); margin-bottom:10px; }
+  .popular-pairs { display:flex; flex-wrap:wrap; gap:6px; }
+  .pair-btn { padding:5px 12px; background:transparent; border:1px solid rgba(132,204,22,0.14); border-radius:100px; color:rgba(232,245,208,0.45); font-size:0.75rem; cursor:pointer; transition:all 0.2s; }
+  .pair-btn:hover { border-color:#84cc16; color:#84cc16; }
+</style>
+</head>
+<body>
+<a href="../index.html" class="back">← Hub</a>
+<header>
+  <h1>💱 <span class="txt">Currency</span></h1>
+  <p class="subtitle">Real-time currency conversion</p>
+</header>
+<div class="converter">
+  <div class="card">
+    <div class="row-amount">
+      <div class="field"><label>Amount</label><input type="number" id="amount" value="100" min="0.01" step="any"/></div>
+    </div>
+    <div class="row-pair">
+      <div class="field"><label>From</label><input type="text" id="have" value="USD" maxlength="3" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"/></div>
+      <button class="swap-btn" onclick="swapCurrencies()" title="Swap">⇄</button>
+      <div class="field"><label>To</label><input type="text" id="want" value="EUR" maxlength="3" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"/></div>
+    </div>
+    <button class="convert-btn" onclick="convert()">Convert</button>
+
+    <!-- Success result -->
+    <div class="result" id="result">
+      <div class="result-label" id="res-label"></div>
+      <div class="result-amount" id="res-amount"></div>
+      <div class="result-rate" id="res-rate"></div>
+    </div>
+
+    <!-- Error box -->
+    <div class="error-box" id="error-box"></div>
+
+    <div class="popular">
+      <div class="popular-label">Quick conversions</div>
+      <div class="popular-pairs">
+        <button class="pair-btn" onclick="q('USD','EUR')">USD→EUR</button>
+        <button class="pair-btn" onclick="q('EUR','USD')">EUR→USD</button>
+        <button class="pair-btn" onclick="q('USD','GBP')">USD→GBP</button>
+        <button class="pair-btn" onclick="q('EUR','JPY')">EUR→JPY</button>
+        <button class="pair-btn" onclick="q('USD','MXN')">USD→MXN</button>
+        <button class="pair-btn" onclick="q('GBP','EUR')">GBP→EUR</button>
+        <button class="pair-btn" onclick="q('USD','BRL')">USD→BRL</button>
+        <button class="pair-btn" onclick="q('USD','JPY')">USD→JPY</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<script src="../js/config.js"></script>
+
+<script>
+  const API = CONFIG.API_URL;
+
+  function swapCurrencies() {
+    const h = document.getElementById('have'), w = document.getElementById('want');
+    [h.value, w.value] = [w.value, h.value];
+  }
+
+  function q(have, want) {
+    document.getElementById('have').value = have;
+    document.getElementById('want').value = want;
+    document.getElementById('amount').value = 100;
+    convert();
+  }
+
+  function showError(msg) {
+    const errEl = document.getElementById('error-box');
+    errEl.textContent = '⚠️ ' + msg;
+    errEl.classList.add('visible');
+    document.getElementById('result').classList.remove('visible');
+  }
+
+  function hideError() {
+    document.getElementById('error-box').classList.remove('visible');
+  }
+
+  async function convert() {
+    const have   = document.getElementById('have').value.trim().toUpperCase();
+    const want   = document.getElementById('want').value.trim().toUpperCase();
+    const amount = parseFloat(document.getElementById('amount').value);
+
+    // Basic client-side validation
+    if (!have || have.length !== 3) { showError('Enter a valid 3-letter currency code in "From" (e.g. USD)'); return; }
+    if (!want || want.length !== 3) { showError('Enter a valid 3-letter currency code in "To" (e.g. EUR)'); return; }
+    if (isNaN(amount) || amount <= 0) { showError('Enter a valid positive amount'); return; }
+
+    hideError();
+    const btn = document.querySelector('.convert-btn');
+    btn.textContent = 'Converting…'; btn.disabled = true;
+
+    try {
+      const r = await fetch(`${API}/api/convertcurrency?have=${have}&want=${want}&amount=${amount}`);
+      const d = await r.json();
+
+      btn.textContent = 'Convert'; btn.disabled = false;
+
+      if (d.error || d.new_amount == null) {
+        showError(d.error || 'Could not convert. Check the currency codes (e.g. USD, EUR, GBP, JPY).');
+        return;
+      }
+
+      const newAmt  = Number(d.new_amount);
+      const rate    = newAmt / amount;
+      const dateStr = d.date ? ` · Rate from ${d.date}` : '';
+
+      document.getElementById('res-label').textContent  = `${amount} ${have} equals`;
+      document.getElementById('res-amount').textContent = `${newAmt.toLocaleString('en', {minimumFractionDigits:2, maximumFractionDigits:2})} ${want}`;
+      document.getElementById('res-rate').textContent   = `1 ${have} = ${rate.toFixed(4)} ${want}${dateStr}`;
+      document.getElementById('result').classList.add('visible');
+
+    } catch (e) {
+      btn.textContent = 'Convert'; btn.disabled = false;
+      showError('Error connecting to backend. Make sure it is running on port 8000.');
+    }
+  }
+</script>
+</body>
+</html>

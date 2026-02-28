@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Guestbook</title>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:      #f7f4ef;
+    --surface: #ffffff;
+    --border:  rgba(60,45,30,0.12);
+    --ink:     #2c2418;
+    --brown:   #8b5e3c;
+    --brown2:  #c4905a;
+    --muted:   rgba(44,36,24,0.4);
+    --card-bg: #faf8f5;
+    --red:     #c0392b;
+  }
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  body { min-height:100vh; background:var(--bg); color:var(--ink); font-family:'DM Sans',sans-serif; overflow-x:hidden; }
+
+  /* Paper texture */
+  body::before { content:''; position:fixed; inset:0; opacity:0.025;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size:300px; pointer-events:none; z-index:0; }
+
+  /* ── HEADER ── */
+  header { text-align:center; padding:clamp(48px,8vw,72px) 16px clamp(16px,3vw,28px); position:relative; z-index:1; border-bottom:1px solid var(--border); }
+  .header-ornament { font-size:1.5rem; margin-bottom:10px; opacity:0.5; }
+  h1 { font-family:'Newsreader',serif; font-size:clamp(2rem,9vw,5rem); font-weight:600; line-height:1; letter-spacing:-0.02em; color:var(--ink); }
+  h1 em { font-style:italic; font-weight:400; color:var(--brown); }
+  .tagline { margin-top:10px; color:var(--muted); font-size:clamp(0.65rem,2vw,0.78rem); letter-spacing:0.2em; text-transform:uppercase; }
+
+  /* ── LAYOUT ── */
+  .layout { display:grid; grid-template-columns:1fr 1.4fr; gap:0; max-width:1000px; margin:0 auto; min-height:calc(100vh - 200px); }
+  @media(max-width:640px) { .layout { grid-template-columns:1fr; } }
+
+  /* ── FORM PANEL ── */
+  .form-panel { padding:clamp(24px,5vw,40px) clamp(16px,4vw,36px); border-right:1px solid var(--border); }
+  @media(max-width:640px) { .form-panel { border-right:none; border-bottom:1px solid var(--border); } }
+
+  .panel-label { font-size:0.65rem; letter-spacing:0.22em; text-transform:uppercase; color:var(--muted); margin-bottom:20px; display:flex; align-items:center; gap:10px; }
+  .panel-label::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  .field { margin-bottom:16px; }
+  .field label { display:block; font-size:0.72rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+  .field input, .field textarea { width:100%; padding:11px 14px; background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--ink); font-family:'DM Sans',sans-serif; font-size:clamp(0.85rem,2.5vw,0.92rem); outline:none; transition:border-color 0.2s; }
+  .field input:focus, .field textarea:focus { border-color:var(--brown); }
+  .field input::placeholder, .field textarea::placeholder { color:var(--muted); }
+  .field textarea { resize:vertical; min-height:100px; max-height:200px; line-height:1.6; }
+  .char-count { text-align:right; font-size:0.68rem; color:var(--muted); margin-top:4px; }
+  .char-count.near { color:var(--brown2); }
+  .char-count.over { color:var(--red); }
+
+  .submit-btn { width:100%; padding:13px; background:var(--ink); border:none; border-radius:8px; color:var(--bg); font-family:'Newsreader',serif; font-size:1rem; font-style:italic; cursor:pointer; transition:all 0.2s; margin-top:4px; }
+  .submit-btn:hover { background:var(--brown); }
+  .submit-btn:active { transform:scale(0.99); }
+  .submit-btn:disabled { opacity:0.4; cursor:not-allowed; }
+
+  .form-msg { margin-top:12px; padding:10px 14px; border-radius:8px; font-size:0.82rem; display:none; }
+  .form-msg.success { background:rgba(39,174,96,0.08); border:1px solid rgba(39,174,96,0.2); color:#27ae60; display:block; }
+  .form-msg.error   { background:rgba(192,57,43,0.06); border:1px solid rgba(192,57,43,0.2); color:var(--red); display:block; }
+
+  /* ── ENTRIES PANEL ── */
+  .entries-panel { padding:clamp(24px,5vw,40px) clamp(16px,4vw,36px); background:var(--card-bg); }
+
+  .entries-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:8px; }
+  .entries-label { font-size:0.65rem; letter-spacing:0.22em; text-transform:uppercase; color:var(--muted); }
+  .entries-count { font-family:'Newsreader',serif; font-size:1.1rem; color:var(--brown); font-style:italic; }
+
+  .entries-list { display:flex; flex-direction:column; gap:14px; }
+
+  .entry-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:clamp(14px,3vw,20px); opacity:0; animation:fadeIn 0.4s ease forwards; }
+  @keyframes fadeIn { to{opacity:1;transform:translateY(0)} from{opacity:0;transform:translateY(8px)} }
+
+  .entry-head { display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:8px; flex-wrap:wrap; }
+  .entry-author { font-family:'Newsreader',serif; font-size:clamp(0.95rem,2.5vw,1.05rem); font-weight:600; color:var(--ink); }
+  .entry-city { font-size:0.72rem; color:var(--brown2); background:rgba(139,94,60,0.08); padding:2px 8px; border-radius:100px; white-space:nowrap; }
+  .entry-comment { font-size:clamp(0.82rem,2.5vw,0.9rem); color:rgba(44,36,24,0.75); line-height:1.65; font-weight:300; }
+  .entry-date { margin-top:10px; font-size:0.68rem; color:var(--muted); letter-spacing:0.05em; }
+
+  .entries-empty { text-align:center; padding:40px 16px; color:var(--muted); font-family:'Newsreader',serif; font-style:italic; font-size:1rem; }
+  .entries-loading { text-align:center; padding:30px; color:var(--muted); font-size:0.82rem; }
+
+  .back { position:fixed; top:14px; left:14px; z-index:100; text-decoration:none; color:#1a1a1a; font-size:0.72rem; letter-spacing:0.15em; text-transform:uppercase; background:rgba(245,240,232,0.9); padding:7px 14px; border-radius:2px; border:1px solid rgba(26,26,26,0.2); backdrop-filter:blur(8px); font-family:'IBM Plex Mono',monospace; }
+</style>
+</head>
+<body>
+<a href="../index.html" class="back">← Hub</a>
+<header>
+  <div class="header-ornament">✦ ✦ ✦</div>
+  <h1>Guest<em>book</em></h1>
+  <p class="tagline">Leave your mark · Share your story</p>
+</header>
+
+<div class="layout">
+  <!-- Form -->
+  <div class="form-panel">
+    <div class="panel-label">Sign the book</div>
+
+    <div class="field">
+      <label>Your name</label>
+      <input type="text" id="name" placeholder="e.g. María García" maxlength="100"/>
+    </div>
+    <div class="field">
+      <label>Your city</label>
+      <input type="text" id="city" placeholder="e.g. Seville, Spain" maxlength="100"/>
+    </div>
+    <div class="field">
+      <label>Your message</label>
+      <textarea id="comment" placeholder="Write a few words…" maxlength="500"></textarea>
+      <div class="char-count" id="char-count">0 / 500</div>
+    </div>
+
+    <button class="submit-btn" id="submit-btn" onclick="submitEntry()">Sign the Guestbook →</button>
+    <div class="form-msg" id="form-msg"></div>
+  </div>
+
+  <!-- Entries -->
+  <div class="entries-panel">
+    <div class="entries-header">
+      <span class="entries-label">Recent visitors</span>
+      <span class="entries-count" id="entries-count">—</span>
+    </div>
+    <div class="entries-list" id="entries-list">
+      <div class="entries-loading">Loading entries…</div>
+    </div>
+  </div>
+</div>
+
+<script src="../js/config.js"></script>
+<script>
+  const API = CONFIG.API_URL; 
+
+  // Character counter
+  document.getElementById('comment').addEventListener('input', function() {
+    const len = this.value.length;
+    const el = document.getElementById('char-count');
+    el.textContent = `${len} / 500`;
+    el.className = 'char-count' + (len > 450 ? ' near' : '') + (len >= 500 ? ' over' : '');
+  });
+
+  function formatDate(iso) {
+    return new Date(iso).toLocaleDateString('en-GB', {
+      day: 'numeric', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+  }
+
+  async function loadEntries() {
+    try {
+      const r = await fetch(`${API}/api/guestbook`);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const entries = await r.json();
+
+      const list = document.getElementById('entries-list');
+      document.getElementById('entries-count').textContent =
+        entries.length === 0 ? 'No entries yet' :
+        entries.length === 1 ? '1 entry' : `${entries.length} entries`;
+
+      if (!entries.length) {
+        list.innerHTML = '<div class="entries-empty">Be the first to sign!</div>';
+        return;
+      }
+
+      list.innerHTML = entries.map((e, i) => `
+        <div class="entry-card" style="animation-delay:${i * 0.06}s">
+          <div class="entry-head">
+            <span class="entry-author">${escHtml(e.name)}</span>
+            <span class="entry-city">📍 ${escHtml(e.city)}</span>
+          </div>
+          <p class="entry-comment">${escHtml(e.comment)}</p>
+          <div class="entry-date">${formatDate(e.created_at)}</div>
+        </div>`).join('');
+    } catch(e) {
+      document.getElementById('entries-list').innerHTML =
+        `<div class="entries-empty" style="color:#ef4444">⚠️ Could not load entries.</div>`;
+    }
+  }
+
+  async function submitEntry() {
+    const name    = document.getElementById('name').value.trim();
+    const city    = document.getElementById('city').value.trim();
+    const comment = document.getElementById('comment').value.trim();
+    const msgEl   = document.getElementById('form-msg');
+    const btn     = document.getElementById('submit-btn');
+
+    msgEl.className = 'form-msg';
+    msgEl.textContent = '';
+
+    if (!name)    { showError('Please enter your name.'); return; }
+    if (!city)    { showError('Please enter your city.'); return; }
+    if (!comment) { showError('Please write a message.'); return; }
+    if (comment.length > 500) { showError('Comment must be 500 characters or less.'); return; }
+
+    btn.disabled = true; btn.textContent = 'Signing…';
+
+    try {
+      const r = await fetch(`${API}/api/guestbook`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, city, comment }),
+      });
+      if (!r.ok) { const e = await r.json(); throw new Error(e.detail || `HTTP ${r.status}`); }
+
+      // Clear form
+      document.getElementById('name').value = '';
+      document.getElementById('city').value = '';
+      document.getElementById('comment').value = '';
+      document.getElementById('char-count').textContent = '0 / 500';
+
+      msgEl.className = 'form-msg success';
+      msgEl.textContent = '✓ Your message has been added to the guestbook!';
+      setTimeout(() => { msgEl.className = 'form-msg'; }, 4000);
+
+      await loadEntries();
+    } catch(e) {
+      showError(e.message || 'Could not connect to backend.');
+    }
+
+    btn.disabled = false; btn.textContent = 'Sign the Guestbook →';
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('form-msg');
+    el.className = 'form-msg error';
+    el.textContent = '⚠️ ' + msg;
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  loadEntries();
+</script>
+</body>
+</html>

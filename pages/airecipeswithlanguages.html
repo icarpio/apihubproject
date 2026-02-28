@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Recipe Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;0,700;1,300;1,600&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:       #0a0d08;
+    --surface:  #111510;
+    --border:   rgba(134,187,74,0.15);
+    --green:    #86bb4a;
+    --green2:   #c8e87a;
+    --text:     #e8eed8;
+    --muted:    rgba(232,238,216,0.4);
+    --card-bg:  rgba(134,187,74,0.04);
+  }
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { min-height:100vh; background:var(--bg); color:var(--text); font-family:'Outfit',sans-serif; overflow-x:hidden; }
+
+  /* Organic background blobs */
+  body::before { content:''; position:fixed; inset:0; background:
+    radial-gradient(ellipse at 15% 20%, rgba(134,187,74,0.07) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 80%, rgba(200,232,122,0.05) 0%, transparent 45%);
+    pointer-events:none; z-index:0; }
+
+  /* Subtle leaf pattern overlay */
+  body::after { content:''; position:fixed; inset:0; opacity:0.025;
+    background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%2386bb4a' fill-opacity='1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/svg%3E");
+    background-size:60px; pointer-events:none; z-index:0; }
+
+  /* ── HEADER ── */
+  header { text-align:center; padding:64px 20px 48px; position:relative; z-index:1; }
+  .logo-wrap { display:inline-flex; align-items:center; gap:14px; margin-bottom:20px; }
+  .logo-icon { width:52px; height:52px; background:linear-gradient(135deg,var(--green),var(--green2)); border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:1.6rem; box-shadow:0 8px 32px rgba(134,187,74,0.25); }
+  h1 { font-family:'Cormorant Garamond',serif; font-size:clamp(2.4rem,8vw,5.5rem); font-weight:700; line-height:1; letter-spacing:-0.02em; }
+  h1 em { font-style:italic; font-weight:300; color:var(--green2); }
+  .tagline { margin-top:10px; color:var(--muted); font-size:clamp(0.7rem,2vw,0.85rem); letter-spacing:0.18em; text-transform:uppercase; font-weight:300; }
+
+  /* ── SEARCH FORM ── */
+  .form-wrap { max-width:620px; margin:36px auto 0; padding:0 16px; position:relative; z-index:1; }
+  .form-card { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:28px 24px; }
+
+  .input-row { display:flex; gap:10px; margin-bottom:16px; }
+  .input-row input { flex:1; min-width:0; padding:13px 18px; background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:12px; color:var(--text); font-family:'Outfit',sans-serif; font-size:0.95rem; outline:none; transition:border-color 0.2s; }
+  .input-row input:focus { border-color:var(--green); }
+  .input-row input::placeholder { color:var(--muted); }
+  .gen-btn { padding:13px 24px; background:linear-gradient(135deg,var(--green),var(--green2)); border:none; border-radius:12px; color:#0a0d08; font-family:'Outfit',sans-serif; font-size:0.9rem; font-weight:600; cursor:pointer; white-space:nowrap; flex-shrink:0; transition:all 0.25s; }
+  .gen-btn:hover { transform:translateY(-1px); box-shadow:0 8px 24px rgba(134,187,74,0.35); }
+  .gen-btn:active { transform:scale(0.98); }
+  .gen-btn:disabled { opacity:0.45; cursor:not-allowed; transform:none; box-shadow:none; }
+
+  /* Language selector */
+  .lang-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .lang-label { font-size:0.7rem; text-transform:uppercase; letter-spacing:0.15em; color:var(--muted); }
+  .lang-btn { padding:5px 14px; background:transparent; border:1px solid var(--border); border-radius:100px; color:var(--muted); font-size:0.75rem; cursor:pointer; transition:all 0.2s; font-family:'Outfit',sans-serif; }
+  .lang-btn:hover { border-color:rgba(134,187,74,0.4); color:var(--text); }
+  .lang-btn.active { background:rgba(134,187,74,0.12); border-color:var(--green); color:var(--green); }
+
+  /* ── STATUS ── */
+  .status { text-align:center; padding:60px 16px; position:relative; z-index:1; }
+  .spinner { display:inline-block; width:40px; height:40px; border:2px solid rgba(134,187,74,0.15); border-top-color:var(--green); border-radius:50%; animation:spin 0.9s linear infinite; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .status-text { margin-top:14px; color:var(--muted); font-size:0.85rem; letter-spacing:0.1em; }
+  .error-msg { color:#ef4444; font-size:0.88rem; margin-top:16px; }
+
+  /* ── RECIPE RESULT ── */
+  .recipe { max-width:780px; margin:40px auto; padding:0 16px 80px; position:relative; z-index:1; opacity:0; transform:translateY(24px); transition:opacity 0.5s ease, transform 0.5s ease; }
+  .recipe.visible { opacity:1; transform:translateY(0); }
+
+  /* Recipe header */
+  .recipe-header { margin-bottom:28px; }
+  .recipe-title { font-family:'Cormorant Garamond',serif; font-size:clamp(1.8rem,6vw,3rem); font-weight:700; color:var(--text); line-height:1.15; }
+  .recipe-chips { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+  .chip { display:flex; align-items:center; gap:6px; padding:6px 14px; background:var(--card-bg); border:1px solid var(--border); border-radius:100px; font-size:0.75rem; color:var(--green2); }
+  .chip-icon { font-size:0.9rem; }
+  .recipe-divider { height:1px; background:linear-gradient(90deg,var(--green),transparent); margin:24px 0; opacity:0.3; }
+
+  /* Two-column layout on desktop */
+  .recipe-body { display:grid; grid-template-columns:1fr 1.6fr; gap:24px; }
+  @media(max-width:600px) { .recipe-body { grid-template-columns:1fr; } }
+
+  /* Ingredients */
+  .panel { background:var(--card-bg); border:1px solid var(--border); border-radius:16px; padding:24px 20px; }
+  .panel-title { font-family:'Cormorant Garamond',serif; font-size:1rem; font-weight:600; color:var(--green2); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+  .panel-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  .ing-list { display:flex; flex-direction:column; gap:10px; }
+  .ing-item { display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding-bottom:10px; border-bottom:1px solid rgba(134,187,74,0.06); }
+  .ing-item:last-child { border-bottom:none; padding-bottom:0; }
+  .ing-name { font-size:clamp(0.82rem,2.5vw,0.9rem); color:var(--text); line-height:1.4; }
+  .ing-qty { font-size:0.78rem; color:var(--green); font-weight:500; white-space:nowrap; flex-shrink:0; background:rgba(134,187,74,0.1); padding:2px 8px; border-radius:100px; }
+
+  /* Instructions */
+  .step-list { display:flex; flex-direction:column; gap:16px; }
+  .step-item { display:flex; gap:16px; }
+  .step-num { font-family:'Cormorant Garamond',serif; font-size:2rem; font-weight:700; color:rgba(134,187,74,0.2); line-height:1; flex-shrink:0; width:32px; text-align:right; }
+  .step-text { font-size:clamp(0.85rem,2.5vw,0.95rem); line-height:1.75; color:rgba(232,238,216,0.8); padding-top:4px; font-weight:300; }
+
+  /* Suggestions */
+  .suggestions { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-top:16px; }
+  .sug-btn { padding:5px 14px; background:transparent; border:1px solid var(--border); border-radius:100px; color:var(--muted); font-size:0.75rem; cursor:pointer; transition:all 0.2s; font-family:'Outfit',sans-serif; }
+  .sug-btn:hover { border-color:var(--green); color:var(--green); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-wrap">
+    <div class="logo-icon">🌿</div>
+  </div>
+  <h1>AI <em>Recipe</em> Generator</h1>
+  <p class="tagline">Powered by GPT-4 · Any dish, any language</p>
+</header>
+
+<!-- Form -->
+<div class="form-wrap">
+  <div class="form-card">
+    <div class="input-row">
+      <input type="text" id="query" placeholder="e.g. spicy Thai noodles, vegan lasagna, chocolate lava cake..." />
+      <button class="gen-btn" id="gen-btn" onclick="generate()">✦ Generate</button>
+    </div>
+    <div class="lang-row">
+      <span class="lang-label">Language</span>
+      <button class="lang-btn active" data-lang="en">🇬🇧 English</button>
+      <button class="lang-btn" data-lang="es">🇪🇸 Español</button>
+      <button class="lang-btn" data-lang="fr">🇫🇷 Français</button>
+      <button class="lang-btn" data-lang="it">🇮🇹 Italiano</button>
+    </div>
+    <!-- Quick suggestions -->
+    <div class="suggestions" style="margin-top:14px">
+      <button class="sug-btn" onclick="suggest('mushroom risotto')">🍄 Mushroom Risotto</button>
+      <button class="sug-btn" onclick="suggest('chicken tikka masala')">🍛 Tikka Masala</button>
+      <button class="sug-btn" onclick="suggest('banana bread')">🍌 Banana Bread</button>
+      <button class="sug-btn" onclick="suggest('beef tacos')">🌮 Beef Tacos</button>
+      <button class="sug-btn" onclick="suggest('caesar salad')">🥗 Caesar Salad</button>
+      <button class="sug-btn" onclick="suggest('tiramisu')">☕ Tiramisu</button>
+    </div>
+  </div>
+</div>
+
+<!-- Status / loading -->
+<div class="status" id="status" style="display:none">
+  <div class="spinner"></div>
+  <p class="status-text">Generating your recipe with GPT…</p>
+</div>
+
+<!-- Recipe output -->
+<div class="recipe" id="recipe" style="display:none"></div>
+
+<script>
+  const AI_API = 'https://apihub-9nt2.onrender.com'; 
+  let selectedLang = 'en';
+
+  // Language buttons
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedLang = btn.dataset.lang;
+    });
+  });
+
+  function suggest(text) {
+    document.getElementById('query').value = text;
+    generate();
+  }
+
+  function showStatus(show) {
+    document.getElementById('status').style.display = show ? 'block' : 'none';
+  }
+
+  function renderRecipe(d) {
+    const recipeEl = document.getElementById('recipe');
+
+    const ingsHTML = (d.ingredients || []).map(ing => `
+      <div class="ing-item">
+        <span class="ing-name">${ing.name}</span>
+        <span class="ing-qty">${ing.quantity}</span>
+      </div>`).join('');
+
+    const stepsHTML = (d.instructions || []).map((step, i) => `
+      <div class="step-item">
+        <span class="step-num">${String(i + 1).padStart(2, '0')}</span>
+        <p class="step-text">${step}</p>
+      </div>`).join('');
+
+    recipeEl.innerHTML = `
+      <div class="recipe-header">
+        <div class="recipe-title">${d.title}</div>
+        <div class="recipe-chips">
+          ${d.servings  ? `<div class="chip"><span class="chip-icon">🍽</span>${d.servings}</div>` : ''}
+          ${d.prep_time ? `<div class="chip"><span class="chip-icon">⏱</span>Prep: ${d.prep_time}</div>` : ''}
+          ${d.cook_time ? `<div class="chip"><span class="chip-icon">🔥</span>Cook: ${d.cook_time}</div>` : ''}
+          <div class="chip"><span class="chip-icon">🧂</span>${(d.ingredients||[]).length} ingredients</div>
+        </div>
+      </div>
+      <div class="recipe-divider"></div>
+      <div class="recipe-body">
+        <div class="panel">
+          <div class="panel-title">Ingredients</div>
+          <div class="ing-list">${ingsHTML}</div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Instructions</div>
+          <div class="step-list">${stepsHTML}</div>
+        </div>
+      </div>`;
+
+    recipeEl.style.display = 'block';
+    // Trigger animation
+    requestAnimationFrame(() => requestAnimationFrame(() => recipeEl.classList.add('visible')));
+  }
+
+  async function generate() {
+    const query = document.getElementById('query').value.trim();
+    if (!query) { document.getElementById('query').focus(); return; }
+
+    const btn = document.getElementById('gen-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Generating…';
+
+    const recipeEl = document.getElementById('recipe');
+    recipeEl.classList.remove('visible');
+    recipeEl.style.display = 'none';
+    showStatus(true);
+
+    try {
+      const r = await fetch(`${AI_API}/api/ai-recipe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, language: selectedLang }),
+      });
+      const data = await r.json();
+      showStatus(false);
+      renderRecipe(data);
+    } catch (e) {
+      showStatus(false);
+      recipeEl.innerHTML = `<p class="error-msg" style="text-align:center">⚠️ Could not connect to backend.<br>Make sure it is running: <code>uvicorn main:app --reload</code></p>`;
+      recipeEl.style.display = 'block';
+      requestAnimationFrame(() => requestAnimationFrame(() => recipeEl.classList.add('visible')));
+    }
+
+    btn.disabled = false;
+    btn.textContent = '✦ Generate';
+  }
+
+  document.getElementById('query').addEventListener('keypress', e => e.key === 'Enter' && generate());
+</script>
+</body>
+</html>

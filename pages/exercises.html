@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Exercises · API Ninjas Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=DM+Sans:wght@300;400&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  body { min-height:100vh; background:#050e05; color:#d4f0d4; font-family:'DM Sans',sans-serif; background-image:radial-gradient(ellipse at 50% 0%,rgba(34,197,94,0.08) 0%,transparent 60%); overflow-x:hidden; }
+  .back { position:fixed; top:14px; left:14px; z-index:100; text-decoration:none; color:#22c55e; font-size:0.78rem; letter-spacing:0.1em; text-transform:uppercase; background:rgba(5,14,5,0.85); padding:7px 14px; border-radius:100px; border:1px solid rgba(34,197,94,0.25); backdrop-filter:blur(8px); }
+  header { text-align:center; padding:72px 16px 0; }
+  h1 { font-family:'Barlow Condensed',sans-serif; font-size:clamp(2.6rem,10vw,6rem); font-weight:900; line-height:1; }
+h1 .txt { background:linear-gradient(135deg,#22c55e,#84cc16); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .muscles { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; max-width:680px; margin:18px auto 0; padding:0 12px; }
+  .muscle-btn { padding:6px 14px; background:transparent; border:1px solid rgba(34,197,94,0.22); border-radius:100px; color:rgba(212,240,212,0.55); font-size:0.78rem; cursor:pointer; transition:all 0.2s; font-family:'DM Sans',sans-serif; }
+  .muscle-btn:hover,.muscle-btn.active { background:rgba(34,197,94,0.14); border-color:#22c55e; color:#22c55e; }
+
+  /* Select de dificultad */
+  .difficulty-select { display:flex; justify-content:center; margin:8px auto 18px; }
+  .difficulty-select select { padding:6px 14px; border-radius:100px; border:1px solid rgba(34,197,94,0.22); background:transparent; color:#d4f0d4; font-size:0.78rem; cursor:pointer; }
+  .difficulty-select select:hover { border-color:#22c55e; color:#22c55e; }
+
+  #translate-bar-container { padding:12px 0 4px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr)); gap:12px; max-width:1050px; margin:16px auto; padding:0 16px 80px; }
+  .ex-card { background:rgba(255,255,255,0.02); border:1px solid rgba(34,197,94,0.1); border-radius:14px; padding:18px; opacity:0; animation:up 0.4s ease forwards; transition:border-color 0.2s,transform 0.2s; }
+  .ex-card:hover { border-color:rgba(34,197,94,0.28); transform:translateY(-3px); }
+  @keyframes up { to{opacity:1} from{opacity:0;transform:translateY(14px)} }
+  .ex-name { font-family:'Barlow Condensed',sans-serif; font-size:clamp(1.1rem,3vw,1.35rem); font-weight:700; color:#22c55e; margin-bottom:9px; line-height:1.2; }
+  .ex-badges { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:10px; }
+  .badge { padding:2px 9px; border-radius:100px; font-size:0.66rem; text-transform:uppercase; letter-spacing:0.08em; }
+  .badge-type { background:rgba(132,204,22,0.1); border:1px solid rgba(132,204,22,0.2); color:#84cc16; }
+  .badge-diff { background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.2); color:#22c55e; }
+  .ex-instructions { font-size:clamp(0.8rem,2.5vw,0.87rem); line-height:1.65; color:rgba(212,240,212,0.58); font-weight:300; }
+  .loading { text-align:center; padding:60px 16px; color:rgba(34,197,94,0.4); grid-column:1/-1; font-size:0.88rem; }
+  .error { text-align:center; padding:40px 16px; color:#ef4444; grid-column:1/-1; font-size:0.88rem; }
+</style>
+</head>
+<body>
+<a href="../index.html" class="back">← Hub</a>
+<header>
+  <h1>💪 Exercises</h1>
+  <div class="muscles">
+    <button class="muscle-btn active" data-muscle="biceps">Biceps</button>
+    <button class="muscle-btn" data-muscle="triceps">Triceps</button>
+    <button class="muscle-btn" data-muscle="chest">Chest</button>
+    <button class="muscle-btn" data-muscle="back">Back</button>
+    <button class="muscle-btn" data-muscle="shoulders">Shoulders</button>
+    <button class="muscle-btn" data-muscle="abdominals">Abs</button>
+    <button class="muscle-btn" data-muscle="quadriceps">Quads</button>
+    <button class="muscle-btn" data-muscle="hamstrings">Hamstrings</button>
+    <button class="muscle-btn" data-muscle="glutes">Glutes</button>
+    <button class="muscle-btn" data-muscle="calves">Calves</button>
+  </div>
+
+  <!-- Select de dificultad -->
+  <div class="difficulty-select">
+    <select id="difficulty-select">
+      <option value="">All difficulties</option>
+      <option value="beginner">Beginner</option>
+      <option value="intermediate">Intermediate</option>
+      <option value="expert">Expert</option>
+    </select>
+  </div>
+
+  <div id="translate-bar-container"></div>
+</header>
+
+<div class="grid" id="content"><div class="loading">Select a muscle group...</div></div>
+
+<script src="../js/config.js"></script>
+<script src="../js/translate.js"></script>
+<script>
+  
+  let rawData = [], currentLang = 'en';
+  let currentMuscle = 'biceps';
+  let currentDifficulty = '';
+
+  renderTranslateBar('translate-bar-container', async (lang) => { currentLang = lang; if(rawData.length) render(rawData, lang); });
+
+  async function render(data, lang) {
+    const N=data.map(e=>e.name||''), I=data.map(e=>e.instructions||'');
+    let tN=N, tI=I;
+    if(lang!=='en') [tN,tI]=await Promise.all([translateTexts(N,lang),translateTexts(I,lang)]);
+    document.getElementById('content').innerHTML = data.map((e,i)=>`
+      <div class="ex-card">
+        <div class="ex-name">${tN[i]}</div>
+        <div class="ex-badges">
+          <span class="badge badge-type">${e.type||''}</span>
+          <span class="badge badge-diff">${e.difficulty||''}</span>
+        </div>
+        <p class="ex-instructions">${tI[i]}</p>
+      </div>`).join('');
+  }
+
+  async function load() {
+    document.getElementById('content').innerHTML='<div class="loading">Loading exercises...</div>';
+    try {
+      const params = new URLSearchParams({muscle: currentMuscle});
+      if(currentDifficulty) params.set('difficulty', currentDifficulty);
+      const r = await fetch(`${API}/api/exercises?${params}`);
+      rawData = await r.json();
+      if(!rawData.length){
+        document.getElementById('content').innerHTML='<div class="loading">No results.</div>';
+        return;
+      }
+      render(rawData,currentLang);
+    } catch {
+      document.getElementById('content').innerHTML='<div class="error">Error connecting to backend.</div>';
+    }
+  }
+
+  // Eventos
+  document.querySelectorAll('.muscle-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.muscle-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      currentMuscle = btn.dataset.muscle;
+      load();
+    });
+  });
+
+  document.getElementById('difficulty-select').addEventListener('change', ()=>{
+    currentDifficulty = document.getElementById('difficulty-select').value;
+    load();
+  });
+
+  // Carga inicial
+  load();
+</script>
+</body>
+</html>

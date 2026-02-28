@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Weather · API Ninjas Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  body { min-height:100vh; background:#05101e; color:#e0f2ff; font-family:'Space Grotesk',sans-serif; background-image:radial-gradient(ellipse at 30% 30%,rgba(59,130,246,0.12) 0%,transparent 60%),radial-gradient(ellipse at 70% 80%,rgba(6,182,212,0.08) 0%,transparent 50%); overflow-x:hidden; }
+  .back { position:fixed; top:14px; left:14px; z-index:100; text-decoration:none; color:#3b82f6; font-size:0.78rem; letter-spacing:0.1em; text-transform:uppercase; background:rgba(5,16,30,0.85); padding:7px 14px; border-radius:100px; border:1px solid rgba(59,130,246,0.25); backdrop-filter:blur(8px); }
+  header { text-align:center; padding:72px 16px 36px; }
+  
+h1 { font-size:clamp(2rem,8vw,4.5rem); font-weight:700; line-height:1.1; }
+h1 .txt { background:linear-gradient(135deg,#3b82f6,#06b6d4); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+
+  .search-box input { flex:1; min-width:0; padding:11px 15px; background:rgba(255,255,255,0.06); border:1px solid rgba(59,130,246,0.3); border-radius:12px; color:#e0f2ff; font-family:'Space Grotesk',sans-serif; font-size:0.9rem; outline:none; transition:border-color 0.2s; }
+  .search-box input:focus { border-color:#3b82f6; }
+  .search-box input::placeholder { color:rgba(224,242,255,0.3); }
+  .search-box button { padding:11px 20px; background:#3b82f6; border:none; border-radius:12px; color:#fff; font-family:'Space Grotesk',sans-serif; cursor:pointer; font-weight:600; font-size:0.9rem; white-space:nowrap; transition:background 0.2s; flex-shrink:0; }
+  .search-box button:hover { background:#2563eb; }
+
+  .weather-card { max-width:580px; margin:32px auto; padding:0 16px 80px; opacity:0; animation:fadeUp 0.5s ease forwards; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+  .main-temp { background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.15); border-radius:20px; padding:32px 20px; text-align:center; margin-bottom:14px; }
+  .temp-big { font-size:clamp(3.8rem,15vw,6rem); font-weight:300; color:#e0f2ff; line-height:1; }
+  .temp-unit { font-size:0.45em; vertical-align:top; margin-top:0.15em; display:inline-block; }
+  .city-name { font-size:clamp(1rem,4vw,1.35rem); font-weight:600; color:#3b82f6; margin-top:8px; }
+  .feels { color:rgba(224,242,255,0.45); font-size:clamp(0.78rem,2.5vw,0.88rem); margin-top:5px; }
+
+  .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  @media(max-width:380px) { .stats { grid-template-columns:repeat(2,1fr); } }
+  .stat { background:rgba(255,255,255,0.03); border:1px solid rgba(59,130,246,0.1); border-radius:14px; padding:16px 10px; text-align:center; }
+  .stat-label { font-size:clamp(0.62rem,2vw,0.72rem); text-transform:uppercase; letter-spacing:0.08em; color:rgba(224,242,255,0.4); margin-bottom:6px; }
+  .stat-val { font-size:clamp(1rem,3.5vw,1.4rem); font-weight:600; color:#06b6d4; }
+
+  .loading { text-align:center; padding:60px 16px; color:rgba(59,130,246,0.45); font-size:0.88rem; }
+  .error { text-align:center; padding:40px 16px; color:#ef4444; font-size:0.88rem; }
+</style>
+</head>
+<body>
+<a href="../index.html" class="back">← Hub</a>
+<header>
+  <h1>🌤️ Weather</h1>
+  <div class="search-box">
+    <input type="text" id="city" placeholder="Search city..." value="Madrid"/>
+    <button onclick="load()">Search</button>
+  </div>
+</header>
+<div class="weather-card" id="content"><div class="loading">Loading weather...</div></div>
+<script src="../js/config.js"></script>
+<script>
+  const API = CONFIG.API_URL; 
+  async function load() {
+    const city = document.getElementById('city').value || 'Madrid';
+    const c = document.getElementById('content');
+    c.innerHTML = '<div class="loading">Loading weather...</div>';
+    try {
+      const r = await fetch(`${API}/api/weather?city=${encodeURIComponent(city)}`);
+      const d = await r.json();
+      c.innerHTML = `
+        <div class="main-temp">
+          <div class="temp-big">${Math.round(d.temp)}<span class="temp-unit">°C</span></div>
+          <div class="city-name">${city}</div>
+          <div class="feels">Feels like ${Math.round(d.feels_like)}°C</div>
+        </div>
+        <div class="stats">
+          <div class="stat"><div class="stat-label">Humidity</div><div class="stat-val">${d.humidity}%</div></div>
+          <div class="stat"><div class="stat-label">Wind</div><div class="stat-val">${Math.round(d.wind_speed)} km/h</div></div>
+          <div class="stat"><div class="stat-label">Min / Max</div><div class="stat-val">${Math.round(d.min_temp)}° / ${Math.round(d.max_temp)}°</div></div>
+          <div class="stat"><div class="stat-label">Sunrise</div><div class="stat-val">${new Date(d.sunrise*1000).toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'})}</div></div>
+          <div class="stat"><div class="stat-label">Sunset</div><div class="stat-val">${new Date(d.sunset*1000).toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'})}</div></div>
+          <div class="stat">
+        <div class="stat-label">Wind Dir</div>
+        <div class="stat-val">${d.wind_degrees}°</div>
+      </div>
+        </div>`;
+      c.style.animation='none'; void c.offsetWidth; c.style.animation='fadeUp 0.4s ease forwards';
+    } catch { c.innerHTML='<div class="error">Error connecting to backend.</div>'; }
+  }
+  document.getElementById('city').addEventListener('keypress', e => e.key==='Enter' && load());
+  load();
+</script>
+</body>
+</html>

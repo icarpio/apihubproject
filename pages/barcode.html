@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Barcode · API Ninjas Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  body { min-height:100vh; background:#f5f0e8; color:#1a1a1a; font-family:'IBM Plex Sans',sans-serif; overflow-x:hidden; }
+
+  /* Scanline effect on hover areas */
+  body::before { content:''; position:fixed; inset:0; background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.012) 3px,rgba(0,0,0,0.012) 4px); pointer-events:none; z-index:0; }
+
+  .back { position:fixed; top:14px; left:14px; z-index:100; text-decoration:none; color:#1a1a1a; font-size:0.72rem; letter-spacing:0.15em; text-transform:uppercase; background:rgba(245,240,232,0.9); padding:7px 14px; border-radius:2px; border:1px solid rgba(26,26,26,0.2); backdrop-filter:blur(8px); font-family:'IBM Plex Mono',monospace; }
+
+  /* ── HEADER ── */
+  header { text-align:center; padding:80px 20px 40px; position:relative; z-index:1; border-bottom:2px solid #1a1a1a; }
+  h1 { font-family:'IBM Plex Mono',monospace; font-size:clamp(2rem,8vw,5rem); font-weight:700; letter-spacing:-0.03em; line-height:1; color:#1a1a1a; }
+  h1 .txt { color:#1a1a1a; } /* no gradient needed — black on cream is sharp */
+  .barcode-deco { display:flex; justify-content:center; gap:2px; margin:16px auto 0; width:fit-content; }
+  .bar { background:#1a1a1a; border-radius:1px; }
+  .subtitle { margin-top:14px; color:rgba(26,26,26,0.4); font-size:clamp(0.62rem,2vw,0.75rem); letter-spacing:0.2em; text-transform:uppercase; font-family:'IBM Plex Mono',monospace; }
+
+  /* ── MAIN LAYOUT ── */
+  .layout { display:grid; grid-template-columns:1fr 1fr; gap:0; max-width:900px; margin:0 auto; padding:0 0 80px; }
+  @media(max-width:640px) { .layout { grid-template-columns:1fr; } }
+
+  /* ── CONFIG PANEL ── */
+  .config { padding:32px 28px; border-right:1px solid rgba(26,26,26,0.1); }
+  @media(max-width:640px) { .config { border-right:none; border-bottom:1px solid rgba(26,26,26,0.1); padding:28px 16px; } }
+
+  .section-label { font-family:'IBM Plex Mono',monospace; font-size:0.65rem; letter-spacing:0.2em; text-transform:uppercase; color:rgba(26,26,26,0.4); margin-bottom:8px; }
+  .field { margin-bottom:20px; }
+  .field input, .field select { width:100%; padding:11px 14px; background:#fff; border:1px solid rgba(26,26,26,0.15); border-radius:2px; color:#1a1a1a; font-family:'IBM Plex Mono',monospace; font-size:0.88rem; outline:none; transition:border-color 0.2s; }
+  .field input:focus, .field select:focus { border-color:#1a1a1a; }
+  .field select option { background:#fff; }
+
+  /* Type selector grid */
+  .type-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; }
+  @media(max-width:400px) { .type-grid { grid-template-columns:repeat(2,1fr); } }
+  .type-btn { padding:7px 4px; background:#fff; border:1px solid rgba(26,26,26,0.12); border-radius:2px; color:rgba(26,26,26,0.5); font-family:'IBM Plex Mono',monospace; font-size:0.65rem; letter-spacing:0.05em; text-transform:uppercase; cursor:pointer; transition:all 0.15s; text-align:center; }
+  .type-btn:hover { border-color:rgba(26,26,26,0.4); color:#1a1a1a; }
+  .type-btn.active { background:#1a1a1a; border-color:#1a1a1a; color:#f5f0e8; }
+
+  .gen-btn { width:100%; padding:13px; background:#1a1a1a; border:none; border-radius:2px; color:#f5f0e8; font-family:'IBM Plex Mono',monospace; font-size:0.85rem; letter-spacing:0.12em; text-transform:uppercase; cursor:pointer; transition:opacity 0.2s; margin-top:4px; }
+  .gen-btn:hover { opacity:0.82; }
+  .gen-btn:active { transform:scale(0.99); }
+  .gen-btn:disabled { opacity:0.35; cursor:not-allowed; }
+
+  /* ── RESULT PANEL ── */
+  .result-panel { padding:32px 28px; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:360px; }
+  @media(max-width:640px) { .result-panel { padding:28px 16px; min-height:280px; } }
+  .result-label { font-family:'IBM Plex Mono',monospace; font-size:0.65rem; letter-spacing:0.2em; text-transform:uppercase; color:rgba(26,26,26,0.3); margin-bottom:20px; align-self:flex-start; }
+  .placeholder { display:flex; flex-direction:column; align-items:center; gap:12px; opacity:0.2; }
+  .placeholder-bars { display:flex; gap:2px; align-items:flex-end; height:80px; }
+  .placeholder-bars span { background:#1a1a1a; border-radius:1px; }
+  .placeholder-text { font-family:'IBM Plex Mono',monospace; font-size:0.7rem; letter-spacing:0.2em; text-transform:uppercase; color:#1a1a1a; }
+
+  .barcode-result { text-align:center; animation:appear 0.4s ease; }
+  @keyframes appear { from{opacity:0;transform:scale(0.97)} to{opacity:1;transform:scale(1)} }
+  .barcode-img { max-width:100%; height:auto; display:block; border:1px solid rgba(26,26,26,0.08); background:#fff; padding:16px; }
+  .barcode-info { margin-top:12px; font-family:'IBM Plex Mono',monospace; font-size:0.7rem; color:rgba(26,26,26,0.4); letter-spacing:0.1em; }
+  .dl-btn { margin-top:14px; padding:8px 22px; background:transparent; border:1px solid rgba(26,26,26,0.2); border-radius:2px; color:rgba(26,26,26,0.6); font-family:'IBM Plex Mono',monospace; font-size:0.72rem; letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; transition:all 0.2s; }
+  .dl-btn:hover { background:#1a1a1a; color:#f5f0e8; border-color:#1a1a1a; }
+
+  .loading-txt { font-family:'IBM Plex Mono',monospace; font-size:0.78rem; letter-spacing:0.15em; color:rgba(26,26,26,0.35); animation:blink 1s ease infinite; }
+  @keyframes blink { 0%,100%{opacity:0.35} 50%{opacity:0.8} }
+  .error-txt { color:#cc3333; font-family:'IBM Plex Mono',monospace; font-size:0.8rem; text-align:center; }
+</style>
+</head>
+<body>
+<a href="../index.html" class="back">← Hub</a>
+
+<header>
+  <!-- decorative barcode lines -->
+  <div class="barcode-deco" id="deco"></div>
+  <h1>Barcode<br><span style="font-weight:300;letter-spacing:0.02em">Generator</span></h1>
+  <p class="subtitle">Encode any text into a scannable barcode</p>
+</header>
+
+<div class="layout" style="border-top:none">
+  <!-- Config -->
+  <div class="config">
+    <div class="field">
+      <div class="section-label">Text to encode</div>
+      <input type="text" id="text" placeholder="e.g. 012345678905" value="012345678905"/>
+    </div>
+    <div class="field">
+      <div class="section-label">Barcode type</div>
+      <div class="type-grid" id="type-grid">
+        <button class="type-btn active" data-type="upc">UPC</button>
+        <button class="type-btn" data-type="ean13">EAN-13</button>
+        <button class="type-btn" data-type="ean8">EAN-8</button>
+        <button class="type-btn" data-type="code128">Code 128</button>
+        <button class="type-btn" data-type="code39">Code 39</button>
+        <button class="type-btn" data-type="isbn13">ISBN-13</button>
+        <button class="type-btn" data-type="isbn10">ISBN-10</button>
+        <button class="type-btn" data-type="issn">ISSN</button>
+        <button class="type-btn" data-type="gs1">GS1</button>
+        <button class="type-btn" data-type="jan">JAN</button>
+        <button class="type-btn" data-type="pzn">PZN</button>
+        <button class="type-btn" data-type="upca">UPC-A</button>
+      </div>
+    </div>
+    <button class="gen-btn" id="gen-btn" onclick="generate()">Generate barcode</button>
+    <div id="error-msg" style="margin-top:10px"></div>
+  </div>
+
+  <!-- Result -->
+  <div class="result-panel">
+    <div class="result-label">Output</div>
+    <div id="result">
+      <div class="placeholder">
+        <div class="placeholder-bars" id="placeholder-bars"></div>
+        <span class="placeholder-text">Barcode will appear here</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API = 'https://apihub-9nt2.onrender.com';
+  let selectedType = 'upc';
+  let lastSrc = null;
+
+  // Generate decorative header bars
+  const deco = document.getElementById('deco');
+  const widths = [3,1,2,1,3,2,1,2,1,3,1,2,3,1,2,1,3,2,1,3,2,1,2,3,1];
+  const heights = [40,55,40,60,45,55,40,60,50,40,55,45,60,40,55,50,45,60,40,55,45,60,50,45,55];
+  widths.forEach((w,i) => { const b=document.createElement('div'); b.className='bar'; b.style.cssText=`width:${w}px;height:${heights[i]}px`; deco.appendChild(b); });
+
+  // Placeholder bars
+  const pb = document.getElementById('placeholder-bars');
+  for(let i=0;i<30;i++){const b=document.createElement('span');b.style.cssText=`width:${Math.random()>0.5?2:4}px;height:${40+Math.random()*40}px`;pb.appendChild(b);}
+
+  // Type selector
+  document.getElementById('type-grid').addEventListener('click', e => {
+    const btn = e.target.closest('.type-btn');
+    if (!btn) return;
+    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedType = btn.dataset.type;
+  });
+
+  async function generate() {
+    const text = document.getElementById('text').value.trim();
+    const errEl = document.getElementById('error-msg');
+    const btn   = document.getElementById('gen-btn');
+    errEl.innerHTML = '';
+    if (!text) { errEl.innerHTML = '<p class="error-txt">Enter text to encode.</p>'; return; }
+
+    btn.textContent = 'Generating…'; btn.disabled = true;
+    document.getElementById('result').innerHTML = '<p class="loading-txt">Scanning...</p>';
+
+    try {
+      const r = await fetch(`${API}/api/barcode?text=${encodeURIComponent(text)}&type=${selectedType}`);
+      const d = await r.json();
+      if (!d.image) throw new Error('No image returned');
+
+      lastSrc = `data:image/png;base64,${d.image}`;
+      document.getElementById('result').innerHTML = `
+        <div class="barcode-result">
+          <img class="barcode-img" src="${lastSrc}" alt="Barcode"/>
+          <div class="barcode-info">${selectedType.toUpperCase()} · "${text}"</div>
+          <button class="dl-btn" onclick="dlBarcode()">↓ Download PNG</button>
+        </div>`;
+    } catch(e) {
+      document.getElementById('result').innerHTML = `<p class="error-txt">⚠️ ${e.message || 'Error connecting to backend.'}</p>`;
+    }
+    btn.textContent = 'Generate barcode'; btn.disabled = false;
+  }
+
+  function dlBarcode() {
+    if (!lastSrc) return;
+    const a = document.createElement('a'); a.href = lastSrc;
+    a.download = `barcode-${selectedType}-${Date.now()}.png`; a.click();
+  }
+
+  // Generate on Enter
+  document.getElementById('text').addEventListener('keypress', e => e.key === 'Enter' && generate());
+</script>
+</body>
+</html>

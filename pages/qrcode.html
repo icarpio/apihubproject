@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>QR Code · API Ninjas Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=DM+Sans:wght@300;400&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  body { min-height:100vh; background:#0e0a1e; color:#e0d8ff; font-family:'DM Sans',sans-serif; background-image:radial-gradient(ellipse at 60% 30%,rgba(168,85,247,0.1) 0%,transparent 60%); overflow-x:hidden; }
+  .back { position:fixed; top:14px; left:14px; z-index:100; text-decoration:none; color:#a855f7; font-size:0.78rem; letter-spacing:0.1em; text-transform:uppercase; background:rgba(14,10,30,0.85); padding:7px 14px; border-radius:100px; border:1px solid rgba(168,85,247,0.25); backdrop-filter:blur(8px); }
+  header { text-align:center; padding:72px 16px 36px; }
+  h1 { font-family:'Space Grotesk',sans-serif; font-size:clamp(2.2rem,9vw,5.5rem); font-weight:700; line-height:1.1; }
+h1 .txt { background:linear-gradient(135deg,#a855f7,#6366f1); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .subtitle { margin-top:8px; color:rgba(224,216,255,0.38); font-size:clamp(0.65rem,2.5vw,0.82rem); letter-spacing:0.15em; text-transform:uppercase; }
+
+  .layout { display:grid; grid-template-columns:1fr 1fr; gap:18px; max-width:860px; margin:32px auto; padding:0 16px 80px; }
+  @media(max-width:600px) { .layout { grid-template-columns:1fr; } }
+
+  .panel { background:rgba(255,255,255,0.03); border:1px solid rgba(168,85,247,0.15); border-radius:18px; padding:24px 20px; }
+  .panel-title { font-family:'Space Grotesk',sans-serif; font-size:0.85rem; font-weight:600; color:rgba(224,216,255,0.45); text-transform:uppercase; letter-spacing:0.12em; margin-bottom:18px; }
+
+  .field { margin-bottom:14px; }
+  .field label { display:block; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.15em; color:rgba(224,216,255,0.38); margin-bottom:7px; }
+  .field input, .field select, .field textarea { width:100%; padding:10px 13px; background:rgba(255,255,255,0.05); border:1px solid rgba(168,85,247,0.2); border-radius:10px; color:#e0d8ff; font-family:'DM Sans',sans-serif; font-size:0.88rem; outline:none; transition:border-color 0.2s; resize:vertical; }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color:#a855f7; }
+  .field select option { background:#130d26; }
+
+  .color-row { display:flex; gap:8px; }
+  .color-field { flex:1; min-width:0; }
+  .color-sub { font-size:0.65rem; color:rgba(224,216,255,0.3); margin-bottom:4px; letter-spacing:0.1em; text-transform:uppercase; }
+  .color-wrap { display:flex; align-items:center; gap:6px; padding:7px 10px; background:rgba(255,255,255,0.05); border:1px solid rgba(168,85,247,0.2); border-radius:10px; }
+  .color-wrap input[type=color] { width:26px; height:26px; border:none; border-radius:4px; cursor:pointer; background:none; padding:0; flex-shrink:0; }
+  .color-wrap input[type=text] { flex:1; min-width:0; background:none; border:none; color:#e0d8ff; font-family:'DM Sans',sans-serif; font-size:0.82rem; outline:none; padding:0; }
+
+  .gen-btn { width:100%; padding:12px; background:linear-gradient(135deg,#a855f7,#6366f1); border:none; border-radius:12px; color:#fff; font-family:'Space Grotesk',sans-serif; font-size:0.9rem; font-weight:600; cursor:pointer; transition:opacity 0.2s; margin-top:4px; }
+  .gen-btn:hover { opacity:0.85; }
+  .gen-btn:disabled { opacity:0.5; cursor:not-allowed; }
+
+  /* Result panel */
+  .qr-display { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:280px; gap:16px; }
+  .qr-placeholder { width:160px; height:160px; border:2px dashed rgba(168,85,247,0.2); border-radius:14px; display:flex; align-items:center; justify-content:center; color:rgba(224,216,255,0.15); font-size:3rem; }
+  .qr-image { border-radius:12px; max-width:min(100%,260px); box-shadow:0 0 40px rgba(168,85,247,0.25); display:block; }
+
+  .download-btn { padding:9px 24px; background:transparent; border:1px solid rgba(168,85,247,0.3); border-radius:100px; color:#a855f7; font-size:0.82rem; cursor:pointer; transition:all 0.2s; font-family:'DM Sans',sans-serif; }
+  .download-btn:hover { background:rgba(168,85,247,0.1); }
+
+  .error-box { padding:14px 16px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); border-radius:10px; color:#ef4444; text-align:center; font-size:0.85rem; margin-top:10px; }
+  .loading-text { color:rgba(168,85,247,0.5); font-size:0.88rem; }
+</style>
+</head>
+<body>
+<a href="../index.html" class="back">← Hub</a>
+<header>
+  <h1>🔲 QR Code</h1>
+  <p class="subtitle">Generate a custom QR instantly</p>
+</header>
+
+<div class="layout">
+  <!-- Config panel -->
+  <div class="panel">
+    <div class="panel-title">Configuration</div>
+    <div class="field">
+      <label>Data to encode</label>
+      <textarea id="data" rows="3" placeholder="URL, text, contact...">https://example.com</textarea>
+    </div>
+    <div class="field">
+      <label>Format</label>
+      <select id="format">
+        <option value="png">PNG</option>
+        <option value="jpg">JPG</option>
+        <option value="jpeg">JPEG</option>
+        <option value="svg">SVG</option>
+        <option value="eps">EPS</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Colors</label>
+      <div class="color-row">
+        <div class="color-field">
+          <div class="color-sub">Foreground</div>
+          <div class="color-wrap">
+            <input type="color" id="fg_p" value="#000000" oninput="syncC('fg')"/>
+            <input type="text"  id="fg_c" value="000000" maxlength="6" oninput="syncP('fg')" placeholder="000000"/>
+          </div>
+        </div>
+        <div class="color-field">
+          <div class="color-sub">Background</div>
+          <div class="color-wrap">
+            <input type="color" id="bg_p" value="#ffffff" oninput="syncC('bg')"/>
+            <input type="text"  id="bg_c" value="ffffff" maxlength="6" oninput="syncP('bg')" placeholder="ffffff"/>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="gen-btn" id="gen-btn" onclick="generate()">Generate QR</button>
+    <div id="error-msg"></div>
+  </div>
+
+  <!-- Result panel -->
+  <div class="panel">
+    <div class="panel-title">Result</div>
+    <div class="qr-display" id="qr-display">
+      <div class="qr-placeholder">🔲</div>
+      <span style="font-size:0.8rem;color:rgba(224,216,255,0.2)">QR will appear here</span>
+    </div>
+  </div>
+</div>
+<script src="../js/config.js"></script>
+<script>
+  const API = CONFIG.API_URL; 
+
+  // Sync color picker ↔ hex text input
+  function syncC(w) {
+    document.getElementById(`${w}_c`).value = document.getElementById(`${w}_p`).value.replace('#', '');
+  }
+  function syncP(w) {
+    const t = document.getElementById(`${w}_c`);
+    if (t.value.length === 6 && /^[0-9a-fA-F]{6}$/.test(t.value)) {
+      document.getElementById(`${w}_p`).value = '#' + t.value;
+    }
+  }
+
+  // Store last generated image for download
+  let lastSrc = null;
+  let lastFmt = 'png';
+
+  async function generate() {
+    const data   = document.getElementById('data').value.trim();
+    const format = document.getElementById('format').value;
+    const fg     = document.getElementById('fg_c').value.trim();
+    const bg     = document.getElementById('bg_c').value.trim();
+    const errEl  = document.getElementById('error-msg');
+    const display = document.getElementById('qr-display');
+    const btn    = document.getElementById('gen-btn');
+
+    errEl.innerHTML = '';
+
+    if (!data) {
+      errEl.innerHTML = '<div class="error-box">Enter some data to encode.</div>';
+      return;
+    }
+    if (!/^[0-9a-fA-F]{6}$/.test(fg) || !/^[0-9a-fA-F]{6}$/.test(bg)) {
+      errEl.innerHTML = '<div class="error-box">Colors must be 6-digit hex codes (e.g. 000000).</div>';
+      return;
+    }
+
+    btn.textContent = 'Generating…'; btn.disabled = true;
+    display.innerHTML = '<div class="qr-display"><p class="loading-text">Generating QR code…</p></div>';
+
+    try {
+      const url = `${API}/api/qrcode?data=${encodeURIComponent(data)}&format=${format}&fg_color=${fg}&bg_color=${bg}`;
+      const r   = await fetch(url);
+
+      if (!r.ok) {
+        const txt = await r.text();
+        throw new Error(`Backend error ${r.status}: ${txt}`);
+      }
+
+      const d = await r.json();
+
+      if (!d.image) {
+        throw new Error('No image data returned from backend.');
+      }
+
+      const mime = d.mime || 'image/png';
+      lastSrc = `data:${mime};base64,${d.image}`;
+      lastFmt = format;
+
+      display.innerHTML = `
+        <img class="qr-image" src="${lastSrc}" alt="QR Code"/>
+        <button class="download-btn" onclick="dlQR()">⬇ Download .${format.toUpperCase()}</button>`;
+
+    } catch (e) {
+      console.error(e);
+      display.innerHTML = '<div class="qr-placeholder">🔲</div>';
+      errEl.innerHTML = `<div class="error-box">⚠️ ${e.message}</div>`;
+    }
+
+    btn.textContent = 'Generate QR'; btn.disabled = false;
+  }
+
+  function dlQR() {
+    if (!lastSrc) return;
+    const a = document.createElement('a');
+    a.href = lastSrc;
+    a.download = `qrcode.${lastFmt}`;
+    a.click();
+  }
+</script>
+</body>
+</html>

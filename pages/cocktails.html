@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cocktails · API Ninjas Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&family=DM+Sans:wght@300;400&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+body { min-height:100vh; background:#120520; color:#fce4ff; font-family:'DM Sans',sans-serif; background-image:radial-gradient(ellipse at 20% 50%,rgba(236,72,153,0.1) 0%,transparent 60%),radial-gradient(ellipse at 80% 30%,rgba(168,85,247,0.08) 0%,transparent 50%); overflow-x:hidden; }
+.back { position:fixed; top:14px; left:14px; z-index:100; text-decoration:none; color:#ec4899; font-size:0.78rem; letter-spacing:0.1em; text-transform:uppercase; background:rgba(18,5,32,0.85); padding:7px 14px; border-radius:100px; border:1px solid rgba(236,72,153,0.25); backdrop-filter:blur(8px); }
+header { text-align:center; padding:72px 16px 0; }
+
+h1 { font-family:'Pacifico',cursive; font-size:clamp(1.9rem,7vw,4.5rem); line-height:1.2; }
+h1 .txt { background:linear-gradient(135deg,#ec4899,#a855f7); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+
+.search-box { display:flex; gap:8px; max-width:460px; margin:18px auto 0; padding:0 4px; }
+.search-box input { flex:1; min-width:0; padding:11px 15px; background:rgba(255,255,255,0.05); border:1px solid rgba(236,72,153,0.25); border-radius:12px; color:#fce4ff; font-family:'DM Sans',sans-serif; font-size:0.9rem; outline:none; }
+.search-box button { padding:11px 20px; background:linear-gradient(135deg,#ec4899,#a855f7); border:none; border-radius:12px; color:#fff; cursor:pointer; font-weight:600; font-size:0.9rem; }
+
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr)); gap:14px; max-width:1050px; margin:16px auto; padding:0 16px 80px; }
+.cocktail-card { background:rgba(255,255,255,0.03); border:1px solid rgba(236,72,153,0.15); border-radius:18px; overflow:hidden; opacity:0; animation:up 0.45s ease forwards; }
+@keyframes up { to{opacity:1} from{opacity:0;transform:translateY(16px)} }
+
+.card-header { padding:18px 18px 0; }
+.cocktail-name { font-size:clamp(1rem,3vw,1.3rem); font-weight:600; color:#ec4899; margin-bottom:5px; }
+.card-body { padding:14px 18px 22px; }
+
+.ing-label { font-size:0.68rem; text-transform:uppercase; letter-spacing:0.15em; color:rgba(252,228,255,0.38); margin-bottom:8px; }
+.ingredients { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:12px; }
+.ing { padding:3px 9px; background:rgba(168,85,247,0.12); border-radius:100px; font-size:0.7rem; color:#d8b4fe; }
+.instructions { font-size:0.85rem; line-height:1.65; color:rgba(252,228,255,0.62); }
+
+.loading, .error { text-align:center; padding:60px 16px; grid-column:1/-1; }
+
+/* MODAL */
+.modal-overlay {
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.7);
+  backdrop-filter:blur(6px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  opacity:0;
+  pointer-events:none;
+  transition:.3s;
+  z-index:999;
+}
+.modal-overlay.active { opacity:1; pointer-events:auto; }
+
+.modal {
+  background:#1a0828;
+  border:1px solid rgba(236,72,153,0.3);
+  border-radius:20px;
+  padding:24px;
+  width:90%;
+  max-width:500px;
+  max-height:80vh;
+  overflow-y:auto;
+  position:relative;
+}
+.modal h2 { color:#ec4899; margin-bottom:12px; }
+.modal-close { position:absolute; top:12px; right:18px; cursor:pointer; font-size:1.2rem; }
+</style>
+</head>
+
+<body>
+<a href="../index.html" class="back">← Hub</a>
+
+<header>
+  <h1>🍹 Cocktails</h1>
+  <div class="search-box">
+    <input type="text" id="q" value="margarita"/>
+    <button onclick="load()">Search</button>
+  </div>
+  <div id="translate-bar-container"></div>
+</header>
+
+<div class="grid" id="content">
+  <div class="loading">Loading cocktails...</div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" onclick="outsideClick(event)">
+  <div class="modal">
+    <span class="modal-close" onclick="closeModal()">✖</span>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<script src="../js/config.js"></script>
+<script src="../js/translate.js"></script>
+
+<script>
+let rawData = [], currentLang = 'en', translatedIngredientsAll = [], translatedInstructions = [];
+
+renderTranslateBar('translate-bar-container', async (lang) => {
+  currentLang = lang;
+  if(rawData.length) render(rawData, lang);
+});
+
+async function render(data, lang) {
+  // traducimos instrucciones
+  const ins = data.map(d => d.instructions || '');
+  translatedInstructions = lang !== 'en' ? await translateTexts(ins, lang) : ins;
+
+  // traducimos **todos los ingredientes**
+  translatedIngredientsAll = [];
+  for(let d of data){
+    const ings = d.ingredients || [];
+    const tIngs = lang !== 'en' ? await translateTexts(ings, lang) : ings;
+    translatedIngredientsAll.push(tIngs);
+  }
+
+  document.getElementById('content').innerHTML =
+    data.slice(0,6).map((d,i) => {
+      const preview = translatedIngredientsAll[i].slice(0,3); // solo los 3 primeros para la card
+      return `
+      <div class="cocktail-card">
+        <div class="card-header">
+          <div class="cocktail-name">${d.name}</div>
+        </div>
+        <div class="card-body">
+      <div class="ing-label">Ingredients</div>
+      <div class="ingredients">
+        ${preview.map(g=>`<span class="ing">${g}</span>`).join('')}
+      </div>
+      <div class="ing-label">Instructions</div>
+      <p class="instructions">${translatedInstructions[i]}</p>
+      <button onclick="openModal(${i})"
+        style="margin-top:10px;padding:8px 14px;background:linear-gradient(135deg,#ec4899,#a855f7);border:none;border-radius:10px;color:white;cursor:pointer;">
+        View details
+      </button>
+    </div>
+      </div>`;
+    }).join('');
+}
+
+// Cargar datos desde backend
+async function load() {
+  const q = document.getElementById('q').value || 'margarita';
+  document.getElementById('content').innerHTML = '<div class="loading">Loading cocktails...</div>';
+
+  try {
+    const r = await fetch(`${API}/api/cocktails?name=${encodeURIComponent(q)}`);
+    rawData = await r.json();
+
+    if(!rawData.length){
+      document.getElementById('content').innerHTML = '<div class="loading">No cocktails found.</div>';
+      return;
+    }
+
+    render(rawData, currentLang);
+
+  } catch {
+    document.getElementById('content').innerHTML = '<div class="error">Error connecting to backend.</div>';
+  }
+}
+
+// Modal usa todos los ingredientes traducidos
+function openModal(index) {
+  const data = rawData[index];
+  const ingredients = translatedIngredientsAll[index] || [];
+  const instructions = translatedInstructions[index] || '';
+
+  document.getElementById('modal-content').innerHTML = `
+    <h2>${data.name}</h2>
+    <h4 style="margin:12px 0 6px;">Ingredients</h4>
+    <ul style="padding-left:18px;">
+      ${ingredients.map(i=>`<li>${i}</li>`).join('')}
+    </ul>
+    <h4 style="margin:12px 0 6px;">Instructions</h4>
+    <p style="line-height:1.6;">${instructions}</p>
+  `;
+
+  document.getElementById('modal').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('active');
+}
+
+function outsideClick(e){
+  if(e.target.id === "modal") closeModal();
+}
+
+document.getElementById('q').addEventListener('keypress', e => e.key==='Enter' && load());
+
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>History · API Ninjas Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,400&family=DM+Sans:wght@300;400&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  body { min-height:100vh; background:#080c10; color:#d4cfc8; font-family:'DM Sans',sans-serif; background-image:radial-gradient(ellipse at 50% 0%,rgba(0,212,170,0.07) 0%,transparent 60%); overflow-x:hidden; }
+  .back { position:fixed; top:14px; left:14px; z-index:100; text-decoration:none; color:#00d4aa; font-size:0.78rem; letter-spacing:0.1em; text-transform:uppercase; background:rgba(8,12,16,0.85); padding:7px 14px; border-radius:100px; border:1px solid rgba(0,212,170,0.25); backdrop-filter:blur(8px); }
+  header { text-align:center; padding:72px 16px 0; }
+  h1 { font-family:'Cormorant Garamond',serif; font-size:clamp(2.2rem,9vw,5.5rem); color:#00d4aa; line-height:1.1; }
+  .subtitle { margin-top:8px; color:rgba(212,207,200,0.4); font-size:clamp(0.65rem,2.5vw,0.82rem); letter-spacing:0.15em; text-transform:uppercase; }
+  .date-badge { display:inline-block; margin-top:12px; padding:4px 16px; border:1px solid rgba(0,212,170,0.3); border-radius:100px; font-size:0.78rem; color:#00d4aa; }
+  #translate-bar-container { padding:12px 0 16px; }
+
+  .timeline { max-width:680px; margin:0 auto; padding:20px 16px 80px; position:relative; }
+  .timeline::before { content:''; position:absolute; left:26px; top:0; bottom:0; width:1px; background:linear-gradient(to bottom,transparent,rgba(0,212,170,0.25),transparent); }
+
+  .event { position:relative; padding:0 0 28px 52px; opacity:0; animation:fadeIn 0.45s ease forwards; }
+  @keyframes fadeIn { to{opacity:1} }
+  .event:nth-child(1){animation-delay:0s} .event:nth-child(2){animation-delay:.08s} .event:nth-child(3){animation-delay:.16s} .event:nth-child(4){animation-delay:.24s} .event:nth-child(5){animation-delay:.32s} .event:nth-child(6){animation-delay:.4s} .event:nth-child(7){animation-delay:.48s} .event:nth-child(8){animation-delay:.56s}
+  .event-dot { position:absolute; left:20px; top:9px; width:12px; height:12px; border-radius:50%; background:#00d4aa; box-shadow:0 0 12px rgba(0,212,170,0.55); flex-shrink:0; }
+  .event-year { font-family:'Cormorant Garamond',serif; font-size:clamp(1.6rem,5vw,2.4rem); color:#00d4aa; line-height:1; margin-bottom:5px; }
+  .event-text { font-size:clamp(0.83rem,2.5vw,0.92rem); line-height:1.7; color:#d4cfc8; font-weight:300; }
+
+  .btn-wrap { text-align:center; margin-bottom:60px; }
+  .btn { display:inline-block; padding:11px 36px; background:transparent; border:1px solid #00d4aa; color:#00d4aa; font-family:'DM Sans',sans-serif; font-size:0.85rem; letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; border-radius:100px; transition:all 0.25s; }
+  .btn:hover { background:#00d4aa; color:#080c10; }
+  .loading { text-align:center; padding:60px 16px; color:rgba(0,212,170,0.4); font-size:0.88rem; }
+  .error { text-align:center; padding:40px 16px; color:#ef4444; font-size:0.88rem; }
+</style>
+</head>
+<body>
+<a href="../index.html" class="back">← Hub</a>
+<header>
+  <h1>📜 History</h1>
+  <p class="subtitle">What happened on a day like today</p>
+  <div class="date-badge" id="today-date"></div>
+  <div id="translate-bar-container"></div>
+</header>
+<div class="timeline" id="content"><div class="loading">Loading events...</div></div>
+<div class="btn-wrap"><button class="btn" onclick="load()">Refresh</button></div>
+
+<script src="../js/config.js"></script>
+<script src="../js/translate.js"></script>
+
+<script>
+  let rawData = [], currentLang = 'en';
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const d = new Date();
+  document.getElementById('today-date').textContent = `${months[d.getMonth()]} ${d.getDate()}`;
+  renderTranslateBar('translate-bar-container', async (lang) => { currentLang = lang; if (rawData.length) render(rawData, lang); });
+  async function render(data, lang) {
+    const texts = data.slice(0,8).map(e => e.event);
+    const t = lang !== 'en' ? await translateTexts(texts, lang) : texts;
+    document.getElementById('content').innerHTML = data.slice(0,8).map((e,i) => `<div class="event"><div class="event-dot"></div><div class="event-year">${e.year}</div><p class="event-text">${t[i]}</p></div>`).join('');
+  }
+  async function load() {
+    document.getElementById('content').innerHTML = '<div class="loading">Loading events...</div>';
+    try { const r = await fetch(`${API}/api/history`); rawData = await r.json(); render(rawData, currentLang); }
+    catch { document.getElementById('content').innerHTML = '<div class="error">Error connecting to backend.</div>'; }
+  }
+  load();
+</script>
+</body>
+</html>

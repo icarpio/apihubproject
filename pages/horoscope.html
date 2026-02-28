@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Horoscope · API Ninjas Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  body { min-height:100vh; background:#06030f; color:#e8d8ff; font-family:'Crimson Pro',serif; overflow-x:hidden; }
+  body::before { content:''; position:fixed; inset:0; background-image:radial-gradient(1px 1px at 15% 20%,rgba(255,255,255,0.55),transparent),radial-gradient(1px 1px at 40% 10%,rgba(255,255,255,0.38),transparent),radial-gradient(1.5px 1.5px at 65% 35%,rgba(255,255,255,0.45),transparent),radial-gradient(1px 1px at 80% 15%,rgba(255,255,255,0.28),transparent),radial-gradient(1px 1px at 25% 65%,rgba(255,255,255,0.35),transparent),radial-gradient(ellipse at 50% 0%,rgba(139,92,246,0.17) 0%,transparent 55%); pointer-events:none; }
+  .back { position:fixed; top:14px; left:14px; z-index:100; text-decoration:none; color:#a78bfa; font-size:0.75rem; letter-spacing:0.12em; text-transform:uppercase; font-family:'Cinzel',serif; background:rgba(6,3,15,0.85); padding:7px 14px; border-radius:100px; border:1px solid rgba(167,139,250,0.25); backdrop-filter:blur(8px); }
+  header { text-align:center; padding:72px 16px 20px; }
+  .moon { font-size:2.2rem; display:block; margin-bottom:10px; animation:float 4s ease-in-out infinite; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+  h1 { font-family:'Cinzel',serif; font-size:clamp(2rem,7vw,5rem); font-weight:700; background:linear-gradient(135deg,#c084fc,#818cf8,#e879f9); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; letter-spacing:0.04em; line-height:1.1; }
+  .subtitle { margin-top:8px; color:rgba(232,216,255,0.3); font-size:clamp(0.62rem,2vw,0.82rem); letter-spacing:0.18em; text-transform:uppercase; font-family:'Cinzel',serif; }
+  .today-date { margin-top:7px; font-style:italic; color:rgba(232,216,255,0.28); font-size:clamp(0.82rem,2.5vw,0.92rem); }
+  #translate-bar-container { padding:12px 0 4px; }
+
+  /* Signs grid: 6 cols desktop → 4 cols tablet → 3 cols small */
+  .signs-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:5px; max-width:660px; margin:20px auto 0; padding:0 14px; }
+  @media(max-width:500px) { .signs-grid { grid-template-columns:repeat(4,1fr); } }
+  @media(max-width:330px) { .signs-grid { grid-template-columns:repeat(3,1fr); } }
+
+  .sign-btn { display:flex; flex-direction:column; align-items:center; gap:3px; padding:10px 4px; background:rgba(139,92,246,0.06); border:1px solid rgba(139,92,246,0.15); border-radius:12px; cursor:pointer; transition:all 0.22s; color:rgba(232,216,255,0.45); font-family:'Cinzel',serif; font-size:clamp(0.46rem,1.5vw,0.58rem); letter-spacing:0.05em; text-transform:uppercase; }
+  .sign-btn:hover { border-color:rgba(192,132,252,0.4); color:#c084fc; background:rgba(139,92,246,0.12); transform:translateY(-2px); }
+  .sign-btn.active { border-color:#c084fc; background:rgba(192,132,252,0.15); color:#c084fc; box-shadow:0 0 14px rgba(192,132,252,0.18); }
+  .sign-emoji { font-size:clamp(1.1rem,4vw,1.5rem); line-height:1; }
+
+  .container { max-width:660px; margin:24px auto; padding:0 16px 80px; }
+  .reading-card { background:rgba(139,92,246,0.05); border:1px solid rgba(139,92,246,0.18); border-radius:18px; padding:clamp(22px,5vw,40px); overflow:hidden; opacity:0; animation:reveal 0.65s ease forwards; }
+  @keyframes reveal { to{opacity:1;transform:translateY(0)} from{opacity:0;transform:translateY(20px)} }
+  .sign-header { display:flex; align-items:center; gap:14px; margin-bottom:20px; }
+  .sign-big-emoji { font-size:clamp(2.2rem,8vw,3.2rem); line-height:1; flex-shrink:0; }
+  .sign-name { font-family:'Cinzel',serif; font-size:clamp(1.2rem,5vw,1.7rem); font-weight:700; color:#c084fc; }
+  .sign-dates { font-size:clamp(0.7rem,2vw,0.82rem); color:rgba(232,216,255,0.32); margin-top:3px; }
+  .divider { height:1px; background:linear-gradient(90deg,transparent,rgba(192,132,252,0.2),transparent); margin:18px 0; }
+  .horoscope-text { font-size:clamp(1rem,3vw,1.18rem); line-height:1.85; color:rgba(232,216,255,0.82); font-style:italic; font-weight:300; }
+  .lucky-section { margin-top:20px; display:flex; gap:8px; flex-wrap:wrap; }
+  .lucky-chip { padding:4px 13px; border-radius:100px; border:1px solid rgba(139,92,246,0.2); font-size:clamp(0.7rem,2vw,0.78rem); color:rgba(232,216,255,0.45); font-family:'Cinzel',serif; letter-spacing:0.05em; }
+  .lucky-chip span { color:#c084fc; }
+
+  .placeholder-card { text-align:center; padding:56px 20px; background:rgba(139,92,246,0.04); border:1px solid rgba(139,92,246,0.1); border-radius:18px; }
+  .placeholder-card .big-icon { font-size:3rem; display:block; margin-bottom:12px; opacity:0.35; }
+  .placeholder-card p { font-size:clamp(0.88rem,2.5vw,0.98rem); font-style:italic; color:rgba(232,216,255,0.2); }
+  .loading-card { text-align:center; padding:56px 20px; background:rgba(139,92,246,0.04); border:1px solid rgba(139,92,246,0.1); border-radius:18px; }
+  .stars-loading { font-size:1.7rem; display:block; animation:twinkle 1.2s ease-in-out infinite; }
+  @keyframes twinkle { 0%,100%{opacity:0.25} 50%{opacity:1} }
+  .loading-text { margin-top:10px; font-style:italic; color:rgba(232,216,255,0.28); font-size:0.9rem; }
+  .error-card { text-align:center; padding:40px 16px; color:#ef4444; font-size:0.88rem; }
+</style>
+</head>
+<body>
+<a href="../index.html" class="back">← Hub</a>
+<header>
+  <span class="moon">🌙</span>
+  <h1>Horoscope</h1>
+  <p class="subtitle">The stars have a message for you</p>
+  <p class="today-date" id="today-date"></p>
+  <div id="translate-bar-container"></div>
+</header>
+<div class="signs-grid">
+  <button class="sign-btn" data-zodiac="aries"       onclick="pick(this)"><span class="sign-emoji">♈</span>Aries</button>
+  <button class="sign-btn" data-zodiac="taurus"      onclick="pick(this)"><span class="sign-emoji">♉</span>Taurus</button>
+  <button class="sign-btn" data-zodiac="gemini"      onclick="pick(this)"><span class="sign-emoji">♊</span>Gemini</button>
+  <button class="sign-btn" data-zodiac="cancer"      onclick="pick(this)"><span class="sign-emoji">♋</span>Cancer</button>
+  <button class="sign-btn" data-zodiac="leo"         onclick="pick(this)"><span class="sign-emoji">♌</span>Leo</button>
+  <button class="sign-btn" data-zodiac="virgo"       onclick="pick(this)"><span class="sign-emoji">♍</span>Virgo</button>
+  <button class="sign-btn" data-zodiac="libra"       onclick="pick(this)"><span class="sign-emoji">♎</span>Libra</button>
+  <button class="sign-btn" data-zodiac="scorpio"     onclick="pick(this)"><span class="sign-emoji">♏</span>Scorpio</button>
+  <button class="sign-btn" data-zodiac="sagittarius" onclick="pick(this)"><span class="sign-emoji">♐</span>Sagitt.</button>
+  <button class="sign-btn" data-zodiac="capricorn"   onclick="pick(this)"><span class="sign-emoji">♑</span>Capric.</button>
+  <button class="sign-btn" data-zodiac="aquarius"    onclick="pick(this)"><span class="sign-emoji">♒</span>Aquar.</button>
+  <button class="sign-btn" data-zodiac="pisces"      onclick="pick(this)"><span class="sign-emoji">♓</span>Pisces</button>
+</div>
+<div class="container">
+  <div id="content"><div class="placeholder-card"><span class="big-icon">🔮</span><p>Select your sign to discover what the stars have in store</p></div></div>
+</div>
+
+<script src="../js/config.js"></script>
+<script src="../js/translate.js"></script>
+
+<script>
+  const signs={aries:{name:'Aries',emoji:'♈',dates:'Mar 21–Apr 19',color:'Red'},taurus:{name:'Taurus',emoji:'♉',dates:'Apr 20–May 20',color:'Green'},gemini:{name:'Gemini',emoji:'♊',dates:'May 21–Jun 20',color:'Yellow'},cancer:{name:'Cancer',emoji:'♋',dates:'Jun 21–Jul 22',color:'Silver'},leo:{name:'Leo',emoji:'♌',dates:'Jul 23–Aug 22',color:'Gold'},virgo:{name:'Virgo',emoji:'♍',dates:'Aug 23–Sep 22',color:'Navy'},libra:{name:'Libra',emoji:'♎',dates:'Sep 23–Oct 22',color:'Pink'},scorpio:{name:'Scorpio',emoji:'♏',dates:'Oct 23–Nov 21',color:'Black'},sagittarius:{name:'Sagittarius',emoji:'♐',dates:'Nov 22–Dec 21',color:'Purple'},capricorn:{name:'Capricorn',emoji:'♑',dates:'Dec 22–Jan 19',color:'Brown'},aquarius:{name:'Aquarius',emoji:'♒',dates:'Jan 20–Feb 18',color:'Turquoise'},pisces:{name:'Pisces',emoji:'♓',dates:'Feb 19–Mar 20',color:'Aquamarine'}};
+  const t=new Date(), mo=['January','February','March','April','May','June','July','August','September','October','November','December'], dy=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  document.getElementById('today-date').textContent=`${dy[t.getDay()]}, ${mo[t.getMonth()]} ${t.getDate()}, ${t.getFullYear()}`;
+  let rawText='', currentLang='en', currentZodiac=null;
+  renderTranslateBar('translate-bar-container', async(lang)=>{ currentLang=lang; if(rawText&&currentZodiac) renderCard(currentZodiac,rawText,lang); });
+  async function renderCard(z,text,lang){
+    const s=signs[z]; let tr=text;
+    if(lang!=='en'){const res=await translateTexts([text],lang);tr=res[0];}
+    document.getElementById('content').innerHTML=`<div class="reading-card"><div class="sign-header"><div class="sign-big-emoji">${s.emoji}</div><div><div class="sign-name">${s.name}</div><div class="sign-dates">${s.dates}</div></div></div><div class="divider"></div><p class="horoscope-text">${tr}</p><div class="divider"></div><div class="lucky-section"><div class="lucky-chip">🔢 Lucky: <span>${Math.floor(Math.random()*99)+1}</span></div><div class="lucky-chip">🎨 Color: <span>${s.color}</span></div></div></div>`;
+  }
+  function pick(btn){document.querySelectorAll('.sign-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');loadSign(btn.dataset.zodiac);}
+  async function loadSign(z){
+    currentZodiac=z;
+    document.getElementById('content').innerHTML='<div class="loading-card"><span class="stars-loading">✨</span><p class="loading-text">Consulting the stars...</p></div>';
+    try{const r=await fetch(`${API}/api/horoscope?zodiac=${z}`);const d=await r.json();rawText=d.horoscope||'The stars are silent today.';renderCard(z,rawText,currentLang);}
+    catch{document.getElementById('content').innerHTML='<div class="error-card">Error connecting to backend.</div>';}
+  }
+</script>
+</body>
+</html>

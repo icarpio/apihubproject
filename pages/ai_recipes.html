@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Recipe Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;0,700;1,300;1,600&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:      #0a0d08;
+    --surface: #111510;
+    --border:  rgba(134,187,74,0.15);
+    --green:   #86bb4a;
+    --green2:  #c8e87a;
+    --text:    #e8eed8;
+    --muted:   rgba(232,238,216,0.4);
+    --card-bg: rgba(134,187,74,0.04);
+  }
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  body { min-height:100vh; background:var(--bg); color:var(--text); font-family:'Outfit',sans-serif; overflow-x:hidden; }
+  body::before { content:''; position:fixed; inset:0; background:
+    radial-gradient(ellipse at 15% 20%,rgba(134,187,74,0.07) 0%,transparent 50%),
+    radial-gradient(ellipse at 85% 80%,rgba(200,232,122,0.05) 0%,transparent 45%);
+    pointer-events:none; z-index:0; }
+
+  /* ── HEADER ── */
+  header { text-align:center; padding:clamp(48px,8vw,72px) 16px clamp(20px,4vw,36px); position:relative; z-index:1; }
+  .logo-icon { width:clamp(40px,8vw,52px); height:clamp(40px,8vw,52px); background:linear-gradient(135deg,var(--green),var(--green2)); border-radius:14px; display:inline-flex; align-items:center; justify-content:center; font-size:clamp(1.2rem,4vw,1.6rem); box-shadow:0 8px 32px rgba(134,187,74,0.25); margin-bottom:14px; }
+  h1 { font-family:'Cormorant Garamond',serif; font-size:clamp(2rem,9vw,5.5rem); font-weight:700; line-height:1; letter-spacing:-0.02em; }
+  h1 em { font-style:italic; font-weight:300; color:var(--green2); }
+  .tagline { margin-top:8px; color:var(--muted); font-size:clamp(0.62rem,2.2vw,0.82rem); letter-spacing:0.18em; text-transform:uppercase; font-weight:300; padding:0 8px; }
+  #translate-bar-container { padding:10px 0 0; }
+
+  /* ── FORM ── */
+  .form-wrap { max-width:620px; margin:20px auto 0; padding:0 14px; position:relative; z-index:1; }
+  .form-card { background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:clamp(16px,4vw,24px); }
+
+  /* Input + button: stack on very small screens */
+  .input-row { display:flex; gap:8px; margin-bottom:14px; }
+  .input-row input { flex:1; min-width:0; padding:clamp(10px,2.5vw,13px) clamp(12px,3vw,18px); background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:12px; color:var(--text); font-family:'Outfit',sans-serif; font-size:clamp(0.85rem,2.5vw,0.95rem); outline:none; transition:border-color 0.2s; }
+  .input-row input:focus { border-color:var(--green); }
+  .input-row input::placeholder { color:var(--muted); }
+  .gen-btn { padding:clamp(10px,2.5vw,13px) clamp(14px,3vw,22px); background:linear-gradient(135deg,var(--green),var(--green2)); border:none; border-radius:12px; color:#0a0d08; font-family:'Outfit',sans-serif; font-size:clamp(0.82rem,2.5vw,0.9rem); font-weight:600; cursor:pointer; white-space:nowrap; flex-shrink:0; transition:all 0.25s; }
+  .gen-btn:hover { transform:translateY(-1px); box-shadow:0 8px 24px rgba(134,187,74,0.35); }
+  .gen-btn:active { transform:scale(0.98); }
+  .gen-btn:disabled { opacity:0.45; cursor:not-allowed; transform:none; box-shadow:none; }
+  @media(max-width:360px) {
+    .input-row { flex-direction:column; }
+    .gen-btn { width:100%; }
+  }
+
+  /* Servings input */
+  .servings-row { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .servings-label { font-size:0.72rem; text-transform:uppercase; letter-spacing:0.15em; color:var(--muted); white-space:nowrap; flex-shrink:0; }
+  .servings-controls { display:flex; align-items:center; gap:0; background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+  .srv-btn { width:34px; height:34px; background:transparent; border:none; color:var(--green); font-size:1.1rem; cursor:pointer; transition:background 0.15s; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+  .srv-btn:hover { background:rgba(134,187,74,0.1); }
+  .srv-input { width:40px; text-align:center; background:transparent; border:none; color:var(--text); font-family:'Outfit',sans-serif; font-size:0.9rem; font-weight:500; outline:none; padding:0; -moz-appearance:textfield; }
+  .srv-input::-webkit-outer-spin-button,.srv-input::-webkit-inner-spin-button { -webkit-appearance:none; }
+  .srv-sep { width:1px; height:20px; background:var(--border); flex-shrink:0; }
+
+  /* Suggestions */
+  .suggestions { display:flex; flex-wrap:wrap; gap:6px; }
+  .sug-btn { padding:5px clamp(10px,2.5vw,14px); background:transparent; border:1px solid var(--border); border-radius:100px; color:var(--muted); font-size:clamp(0.68rem,2vw,0.75rem); cursor:pointer; transition:all 0.2s; font-family:'Outfit',sans-serif; }
+  .sug-btn:hover { border-color:var(--green); color:var(--green); }
+
+  /* ── STATUS ── */
+  .status { text-align:center; padding:50px 16px; position:relative; z-index:1; display:none; }
+  .spinner { display:inline-block; width:38px; height:38px; border:2px solid rgba(134,187,74,0.15); border-top-color:var(--green); border-radius:50%; animation:spin 0.9s linear infinite; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .status-text { margin-top:12px; color:var(--muted); font-size:clamp(0.78rem,2.5vw,0.85rem); letter-spacing:0.1em; }
+
+  /* ── RECIPE ── */
+  .recipe { max-width:820px; margin:clamp(24px,5vw,40px) auto; padding:0 14px clamp(40px,8vw,80px); position:relative; z-index:1; display:none; opacity:0; transform:translateY(20px); transition:opacity 0.5s ease,transform 0.5s ease; }
+  .recipe.visible { opacity:1; transform:translateY(0); }
+
+  .recipe-title-el { font-family:'Cormorant Garamond',serif; font-size:clamp(1.5rem,6vw,3rem); font-weight:700; line-height:1.2; margin-bottom:12px; }
+
+  /* Chips — wrap freely */
+  .recipe-chips { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:20px; }
+  .chip { display:flex; align-items:center; gap:5px; padding:5px clamp(10px,2.5vw,14px); background:var(--card-bg); border:1px solid var(--border); border-radius:100px; font-size:clamp(0.68rem,2vw,0.75rem); color:var(--green2); white-space:nowrap; }
+
+  .recipe-divider { height:1px; background:linear-gradient(90deg,var(--green),transparent); margin-bottom:20px; opacity:0.3; }
+
+  /* Two columns → one column on mobile */
+  .recipe-body { display:grid; grid-template-columns:1fr 1.6fr; gap:16px; }
+  @media(max-width:580px) { .recipe-body { grid-template-columns:1fr; } }
+
+  .panel { background:var(--card-bg); border:1px solid var(--border); border-radius:14px; padding:clamp(16px,4vw,22px) clamp(14px,3.5vw,20px); }
+  .panel-title { font-family:'Cormorant Garamond',serif; font-size:clamp(0.85rem,2.5vw,1rem); font-weight:600; color:var(--green2); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+  .panel-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  /* Ingredients */
+  .ing-list { display:flex; flex-direction:column; gap:8px; }
+  .ing-item { display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding-bottom:8px; border-bottom:1px solid rgba(134,187,74,0.06); }
+  .ing-item:last-child { border-bottom:none; padding-bottom:0; }
+  .ing-name { font-size:clamp(0.78rem,2.5vw,0.88rem); color:var(--text); line-height:1.4; }
+  .ing-qty { font-size:clamp(0.68rem,2vw,0.75rem); color:var(--green); font-weight:500; white-space:nowrap; flex-shrink:0; background:rgba(134,187,74,0.1); padding:2px 8px; border-radius:100px; }
+
+  /* Steps */
+  .step-list { display:flex; flex-direction:column; gap:12px; }
+  .step-item { display:flex; gap:12px; }
+  .step-num { font-family:'Cormorant Garamond',serif; font-size:clamp(1.4rem,4vw,1.9rem); font-weight:700; color:rgba(134,187,74,0.2); line-height:1; flex-shrink:0; width:clamp(22px,5vw,30px); text-align:right; }
+  .step-text { font-size:clamp(0.8rem,2.5vw,0.93rem); line-height:1.75; color:rgba(232,238,216,0.8); padding-top:2px; font-weight:300; }
+
+  .error-msg { text-align:center; color:#ef4444; font-size:clamp(0.82rem,2.5vw,0.88rem); padding:20px; line-height:1.6; }
+  .error-msg code { font-size:0.8em; opacity:0.7; }
+  .back { position:fixed; top:14px; left:14px; z-index:100; text-decoration:none; color:#1a1a1a; font-size:0.72rem; letter-spacing:0.15em; text-transform:uppercase; background:rgba(245,240,232,0.9); padding:7px 14px; border-radius:2px; border:1px solid rgba(26,26,26,0.2); backdrop-filter:blur(8px); font-family:'IBM Plex Mono',monospace; }
+</style>
+</head>
+<body>
+<a href="../index.html" class="back">← Hub</a>
+<header>
+  <div class="logo-icon">🌿</div>
+  <h1>AI <em>Recipe</em> Generator</h1>
+  <p class="tagline">Powered by GPT-4 · Any dish, any language</p>
+  <div id="translate-bar-container"></div>
+</header>
+
+<div class="form-wrap">
+  <div class="form-card">
+    <div class="input-row">
+      <input type="text" id="query" placeholder="e.g. spicy Thai noodles, banana bread..."/>
+      <button class="gen-btn" id="gen-btn" onclick="generate()">✦ Generate</button>
+    </div>
+    <div class="servings-row">
+      <span class="servings-label">🍽 Servings</span>
+      <div class="servings-controls">
+        <button class="srv-btn" onclick="changeServings(-1)">−</button>
+        <div class="srv-sep"></div>
+        <input class="srv-input" type="number" id="servings" value="4" min="1" max="20"/>
+        <div class="srv-sep"></div>
+        <button class="srv-btn" onclick="changeServings(1)">+</button>
+      </div>
+    </div>
+    <div class="suggestions">
+      <button class="sug-btn" onclick="suggest('mushroom risotto')">🍄 Risotto</button>
+      <button class="sug-btn" onclick="suggest('chicken tikka masala')">🍛 Tikka</button>
+      <button class="sug-btn" onclick="suggest('banana bread')">🍌 Banana Bread</button>
+      <button class="sug-btn" onclick="suggest('beef tacos')">🌮 Tacos</button>
+      <button class="sug-btn" onclick="suggest('caesar salad')">🥗 Caesar</button>
+      <button class="sug-btn" onclick="suggest('tiramisu')">☕ Tiramisu</button>
+    </div>
+  </div>
+</div>
+
+<div class="status" id="status">
+  <div class="spinner"></div>
+  <p class="status-text">Generating your recipe with GPT-4…</p>
+</div>
+
+<div class="recipe" id="recipe"></div>
+
+<script src="../js/config.js"></script>
+<script src="../js/translate.js"></script>
+<script>
+
+  let rawData = null;
+  let currentLang = 'en';
+
+  renderTranslateBar('translate-bar-container', async (lang) => {
+    currentLang = lang;
+    if (rawData) await renderRecipe(rawData, lang);
+  });
+
+  function changeServings(delta) {
+    const input = document.getElementById('servings');
+    const val = Math.min(20, Math.max(1, (parseInt(input.value) || 4) + delta));
+    input.value = val;
+  }
+
+  function suggest(text) {
+    document.getElementById('query').value = text;
+    generate();
+  }
+
+  async function renderRecipe(d, lang) {
+    const titles    = [d.title];
+    const ingNames  = d.ingredients.map(i => i.name);
+    const steps     = d.instructions;
+    const chipTexts = [d.servings, d.prep_time, d.cook_time];
+
+    let tTitles = titles, tIngNames = ingNames, tSteps = steps, tChips = chipTexts;
+
+    if (lang !== 'en') {
+      [tTitles, tIngNames, tSteps, tChips] = await Promise.all([
+        translateTexts(titles,    lang),
+        translateTexts(ingNames,  lang),
+        translateTexts(steps,     lang),
+        translateTexts(chipTexts, lang),
+      ]);
+    }
+
+    const ingsHTML = d.ingredients.map((ing, i) => `
+      <div class="ing-item">
+        <span class="ing-name">${tIngNames[i]}</span>
+        <span class="ing-qty">${ing.quantity}</span>
+      </div>`).join('');
+
+    const stepsHTML = tSteps.map((step, i) => `
+      <div class="step-item">
+        <span class="step-num">${String(i + 1).padStart(2, '0')}</span>
+        <p class="step-text">${step}</p>
+      </div>`).join('');
+
+    const recipeEl = document.getElementById('recipe');
+    recipeEl.innerHTML = `
+      <div class="recipe-title-el">${tTitles[0]}</div>
+      <div class="recipe-chips">
+        ${d.servings  ? `<div class="chip">🍽 ${tChips[0]}</div>` : ''}
+        ${d.prep_time ? `<div class="chip">⏱ Prep: ${tChips[1]}</div>` : ''}
+        ${d.cook_time ? `<div class="chip">🔥 Cook: ${tChips[2]}</div>` : ''}
+        <div class="chip">🧂 ${d.ingredients.length} ingredients</div>
+      </div>
+      <div class="recipe-divider"></div>
+      <div class="recipe-body">
+        <div class="panel">
+          <div class="panel-title">Ingredients</div>
+          <div class="ing-list">${ingsHTML}</div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Instructions</div>
+          <div class="step-list">${stepsHTML}</div>
+        </div>
+      </div>`;
+
+    recipeEl.style.display = 'block';
+    requestAnimationFrame(() => requestAnimationFrame(() => recipeEl.classList.add('visible')));
+  }
+
+  async function generate() {
+    const query = document.getElementById('query').value.trim();
+    if (!query) { document.getElementById('query').focus(); return; }
+
+    const btn = document.getElementById('gen-btn');
+    btn.disabled = true; btn.textContent = '⏳…';
+
+    const recipeEl = document.getElementById('recipe');
+    recipeEl.classList.remove('visible');
+    recipeEl.style.display = 'none';
+    rawData = null;
+    document.getElementById('status').style.display = 'block';
+
+    try {
+      const r = await fetch(`${API}/api/ai-recipe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, servings: parseInt(document.getElementById('servings').value) || 4 }),
+      });
+      if (!r.ok) { const e = await r.json(); throw new Error(e.detail || `HTTP ${r.status}`); }
+      rawData = await r.json();
+      document.getElementById('status').style.display = 'none';
+      await renderRecipe(rawData, currentLang);
+    } catch(e) {
+      document.getElementById('status').style.display = 'none';
+      recipeEl.innerHTML = `<p class="error-msg">⚠️ ${e.message || 'Could not connect to backend.'}<br><code>uvicorn main:app --reload</code></p>`;
+      recipeEl.style.display = 'block';
+      requestAnimationFrame(() => requestAnimationFrame(() => recipeEl.classList.add('visible')));
+    }
+
+    btn.disabled = false; btn.textContent = '✦ Generate';
+  }
+
+  document.getElementById('query').addEventListener('keypress', e => e.key === 'Enter' && generate());
+</script>
+</body>
+</html>

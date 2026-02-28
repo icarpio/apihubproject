@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>API Ninjas Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0a0f; --surface: #12121a; --border: #1e1e2e;
+    --accent1: #ff6b35; --accent2: #00d4aa; --text: #e8e8f0; --muted: #666680;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; min-height:100vh; overflow-x:hidden; }
+  body::before { content:''; position:fixed; inset:0; background-image: linear-gradient(rgba(255,107,53,0.03) 1px,transparent 1px), linear-gradient(90deg,rgba(255,107,53,0.03) 1px,transparent 1px); background-size:60px 60px; pointer-events:none; }
+
+  header { padding:48px 20px 36px; text-align:center; position:relative; }
+  header::after { content:''; position:absolute; bottom:0; left:50%; transform:translateX(-50%); width:100px; height:2px; background:linear-gradient(90deg,transparent,var(--accent1),transparent); }
+  .logo { font-family:'Bebas Neue',sans-serif; font-size:clamp(2.8rem,10vw,7rem); letter-spacing:0.05em; background:linear-gradient(135deg,var(--accent1),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; line-height:1; }
+  .tagline { margin-top:10px; color:var(--muted); font-size:clamp(0.7rem,2.5vw,0.95rem); letter-spacing:0.12em; text-transform:uppercase; font-weight:300; padding:0 10px; }
+
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; padding:48px 20px; max-width:1400px; margin:0 auto; }
+
+  .card { position:relative; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:28px 24px; cursor:pointer; text-decoration:none; display:block; overflow:hidden; transition:transform 0.3s,border-color 0.3s,box-shadow 0.3s; animation:fadeUp 0.6s ease both; }
+  .card:nth-child(1){animation-delay:.05s}.card:nth-child(2){animation-delay:.1s}.card:nth-child(3){animation-delay:.15s}.card:nth-child(4){animation-delay:.2s}.card:nth-child(5){animation-delay:.25s}.card:nth-child(6){animation-delay:.3s}.card:nth-child(7){animation-delay:.35s}.card:nth-child(8){animation-delay:.4s}.card:nth-child(9){animation-delay:.45s}.card:nth-child(10){animation-delay:.5s}.card:nth-child(11){animation-delay:.55s}.card:nth-child(12){animation-delay:.6s}
+  @keyframes fadeUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+  .card::before { content:''; position:absolute; inset:0; opacity:0; transition:opacity 0.3s; border-radius:16px; }
+  .card:hover { transform:translateY(-6px); }
+  .card:hover::before { opacity:1; }
+  .card:active { transform:translateY(-2px); }
+
+  .card[data-color="orange"]{--c:#ff6b35}.card[data-color="teal"]{--c:#00d4aa}.card[data-color="purple"]{--c:#a855f7}.card[data-color="blue"]{--c:#3b82f6}.card[data-color="yellow"]{--c:#fbbf24}.card[data-color="pink"]{--c:#ec4899}.card[data-color="green"]{--c:#22c55e}.card[data-color="red"]{--c:#ef4444}.card[data-color="cyan"]{--c:#06b6d4}.card[data-color="lime"]{--c:#84cc16}
+  .card:hover { border-color:var(--c); box-shadow:0 0 40px -10px var(--c); }
+  .card::before { background:radial-gradient(ellipse at top left,color-mix(in srgb,var(--c) 8%,transparent),transparent 60%); }
+
+  .card-icon { font-size:2.4rem; margin-bottom:16px; display:block; }
+  .card-number { position:absolute; top:16px; right:20px; font-family:'Bebas Neue',sans-serif; font-size:2.8rem; color:var(--border); line-height:1; transition:color 0.3s; }
+  .card:hover .card-number { color:color-mix(in srgb,var(--c) 20%,transparent); }
+  .card-title { font-family:'Bebas Neue',sans-serif; font-size:1.5rem; letter-spacing:0.05em; color:var(--text); margin-bottom:8px; }
+  .card-desc { font-size:0.83rem; color:var(--muted); line-height:1.6; font-weight:300; }
+  .card-tag { display:inline-block; margin-top:14px; padding:4px 10px; border-radius:100px; font-size:0.68rem; letter-spacing:0.1em; text-transform:uppercase; border:1px solid var(--c); color:var(--c); font-weight:500; }
+
+  /* Mobile: 2 columns */
+  @media(max-width:600px) {
+    .grid { grid-template-columns:repeat(2,1fr); gap:10px; padding:28px 12px; }
+    .card { padding:20px 14px 16px; border-radius:12px; }
+    .card-icon { font-size:1.8rem; margin-bottom:10px; }
+    .card-number { font-size:2rem; top:10px; right:12px; }
+    .card-title { font-size:1.1rem; margin-bottom:4px; }
+    .card-desc { display:none; }
+    .card-tag { margin-top:10px; font-size:0.62rem; }
+    .card:hover { transform:none; }
+  }
+
+  footer { text-align:center; padding:32px 20px; color:var(--muted); font-size:0.78rem; border-top:1px solid var(--border); }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">API  Hub</div>
+  <p class="tagline">Real-time data </p>
+</header>
+<div class="grid">
+  <a href="pages/facts.html" class="card" data-color="orange"><span class="card-number">01</span><span class="card-icon">🧠</span><div class="card-title">Facts</div><p class="card-desc">Surprising data about the world you didn't know you needed.</p><span class="card-tag">Facts</span></a>
+  <a href="pages/history.html" class="card" data-color="teal"><span class="card-number">02</span><span class="card-icon">📜</span><div class="card-title">History</div><p class="card-desc">Historical events that happened on a day like today.</p><span class="card-tag">History</span></a>
+  <a href="pages/weather.html" class="card" data-color="blue"><span class="card-number">03</span><span class="card-icon">🌤️</span><div class="card-title">Weather</div><p class="card-desc">Current weather conditions in any city in the world.</p><span class="card-tag">Weather</span></a>
+  <a href="pages/cocktails.html" class="card" data-color="pink"><span class="card-number">04</span><span class="card-icon">🍹</span><div class="card-title">Cocktails</div><p class="card-desc">Discover classic and modern cocktails with their original recipes.</p><span class="card-tag">Cocktails</span></a>
+  <a href="pages/worldtime.html" class="card" data-color="cyan"><span class="card-number">05</span><span class="card-icon">🕐</span><div class="card-title">World Time</div><p class="card-desc">Check the current time in any city on the planet in real time.</p><span class="card-tag">World Time</span></a>
+  <a href="pages/exercises.html" class="card" data-color="green"><span class="card-number">06</span><span class="card-icon">💪</span><div class="card-title">Exercises</div><p class="card-desc">Routines and exercises by muscle group for your ideal workout.</p><span class="card-tag">Exercises</span></a>
+  <a href="pages/currency.html" class="card" data-color="lime"><span class="card-number">07</span><span class="card-icon">💱</span><div class="card-title">Currency</div><p class="card-desc">Convert any world currency with real-time exchange rates.</p><span class="card-tag">Currency</span></a>
+  <a href="pages/qrcode.html" class="card" data-color="purple"><span class="card-number">08</span><span class="card-icon">🔲</span><div class="card-title">QR Code</div><p class="card-desc">Generate custom QR codes with colors and sizes to your liking.</p><span class="card-tag">QR Code</span></a>
+  <a href="pages/randomimage.html" class="card" data-color="teal"><span class="card-number">9</span><span class="card-icon">🖼️</span><div class="card-title">Random Image</div><p class="card-desc">Discover surprising images generated at random from the API.</p><span class="card-tag">Random Image</span></a>
+  <a href="pages/horoscope.html" class="card" data-color="purple"><span class="card-number">10</span><span class="card-icon">🔮</span><div class="card-title">Horoscope</div><p class="card-desc">Check your daily horoscope according to your zodiac sign.</p><span class="card-tag">Horoscope</span></a>
+  <a href="pages/barcode.html" class="card" data-color="orange"><span class="card-number">11</span><span class="card-icon">📊</span><div class="card-title">Barcode</div><p class="card-desc">Generate scannable barcodes in UPC, EAN, ISBN and more formats.</p><span class="card-tag">Barcode</span></a>
+  <a href="pages/ai_recipes.html" class="card" data-color="yellow"><span class="card-number">12</span><span class="card-icon">🍳</span><div class="card-title">AI Recipes</div><p class="card-desc">Generate recipes with IA</p><span class="card-tag">AI Recipes</span></a>
+  <a href="pages/quotes.html" class="card" data-color="yellow"><span class="card-number">13</span><span class="card-icon">💬</span><div class="card-title">Quotes</div><p class="card-desc">Curated wisdom from great minds, filtered by category.</p><span class="card-tag">Quotes</span></a>
+  <a href="pages/password.html" class="card" data-color="red"><span class="card-number">14</span><span class="card-icon">🔐</span><div class="card-title">Passwords</div><p class="card-desc">Generate secure random passwords to protect your accounts.</p><span class="card-tag">Password</span></a>
+  <a href="pages/city_history.html" class="card" data-color="yellow"><span class="card-number">15</span><span class="card-icon">📜</span><div class="card-title">City History</div><p class="card-desc">Explore the history of your favorite cities,</p><span class="card-tag">City History</span></a>
+  <a href="pages/guestbook.html" class="card" data-color="red"><span class="card-number">16</span><span class="card-icon">💬</span><div class="card-title">GuestBook</div><p class="card-desc">>Leave a message in the interactive guestbook</p><span class="card-tag">Guestbook</span></a>
+  </div>
+<footer>API Hub · Real-time data with multilingual translation</footer>
+</body>
+</html>
+
+
+<!--
+<a href="pages/recipes.html" class="card" data-color="yellow"><span class="card-number">04</span><span class="card-icon">🍳</span><div class="card-title">Recipes</div><p class="card-desc">Find delicious recipes with the ingredients you have at home.</p><span class="card-tag">Recipes</span></a>
+-->
