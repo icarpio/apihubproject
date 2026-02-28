@@ -3,142 +3,176 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Exercises · API Ninjas Hub</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=DM+Sans:wght@300;400&display=swap" rel="stylesheet"/>
+<title>Quotes · API Ninjas Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"/>
 <style>
   *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-  body { min-height:100vh; background:#050e05; color:#d4f0d4; font-family:'DM Sans',sans-serif; background-image:radial-gradient(ellipse at 50% 0%,rgba(34,197,94,0.08) 0%,transparent 60%); overflow-x:hidden; }
-  .back { position:fixed; top:14px; left:14px; z-index:100; text-decoration:none; color:#22c55e; font-size:0.78rem; letter-spacing:0.1em; text-transform:uppercase; background:rgba(5,14,5,0.85); padding:7px 14px; border-radius:100px; border:1px solid rgba(34,197,94,0.25); backdrop-filter:blur(8px); }
-  header { text-align:center; padding:72px 16px 0; }
+  body { min-height:100vh; background:#0c0c0e; color:#f0ede8; font-family:'Jost',sans-serif; overflow-x:hidden; }
+  body::before { content:''; position:fixed; inset:0; opacity:0.04; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E"); background-size:200px; pointer-events:none; z-index:0; }
+  body::after { content:''; position:fixed; inset:0; background:radial-gradient(ellipse at 50% 0%,rgba(212,175,55,0.07) 0%,transparent 65%); pointer-events:none; z-index:0; }
 
-  h1 { font-family:'Barlow Condensed',sans-serif; font-size:clamp(2.6rem,10vw,6rem); font-weight:900; line-height:1; }
-  h1 .txt { background:linear-gradient(135deg,#22c55e,#84cc16); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .back { position:fixed; top:14px; left:14px; z-index:100; text-decoration:none; color:#d4af37; font-size:0.72rem; letter-spacing:0.15em; text-transform:uppercase; background:rgba(12,12,14,0.9); padding:7px 14px; border-radius:100px; border:1px solid rgba(212,175,55,0.2); backdrop-filter:blur(8px); font-family:'Jost',sans-serif; }
 
-  .muscles { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; max-width:680px; margin:18px auto 0; padding:0 12px; }
-  .muscle-btn { padding:6px 14px; background:transparent; border:1px solid rgba(34,197,94,0.22); border-radius:100px; color:rgba(212,240,212,0.55); font-size:0.78rem; cursor:pointer; transition:all 0.2s; font-family:'DM Sans',sans-serif; }
-  .muscle-btn:hover,.muscle-btn.active { background:rgba(34,197,94,0.14); border-color:#22c55e; color:#22c55e; }
+  header { text-align:center; padding:80px 20px 24px; position:relative; z-index:1; }
+  .header-rule { width:48px; height:1px; background:linear-gradient(90deg,transparent,#d4af37,transparent); margin:0 auto 20px; }
+  h1 { font-family:'Libre Baskerville',serif; font-size:clamp(2.4rem,8vw,5.5rem); font-weight:700; letter-spacing:-0.02em; line-height:1; color:#f0ede8; }
+  h1 .accent { color:#d4af37; font-style:italic; font-weight:400; }
+  .subtitle { margin-top:10px; color:rgba(240,237,232,0.35); font-size:clamp(0.65rem,2vw,0.78rem); letter-spacing:0.25em; text-transform:uppercase; font-weight:300; }
+  #translate-bar-container { padding:12px 0 0; }
 
-  /* FILTROS SELECTORES */
-  .filters { display:flex; gap:12px; justify-content:center; margin:12px auto; flex-wrap:wrap; }
-  .filters select {
-    padding: 6px 12px;
-    border-radius: 100px;
-    border: 1px solid rgba(34,197,94,0.22);
-    background: #050e05;
-    color: #d4f0d4;
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.78rem;
-  }
-  .filters select:hover { border-color: #22c55e; }
+  .filters { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; max-width:760px; margin:24px auto 0; padding:0 16px; position:relative; z-index:1; }
+  .cat-btn { padding:5px 14px; background:transparent; border:1px solid rgba(212,175,55,0.15); border-radius:100px; color:rgba(240,237,232,0.4); font-size:0.72rem; letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; transition:all 0.2s; font-family:'Jost',sans-serif; font-weight:400; }
+  .cat-btn:hover { border-color:rgba(212,175,55,0.4); color:rgba(240,237,232,0.8); }
+  .cat-btn.active { background:rgba(212,175,55,0.1); border-color:#d4af37; color:#d4af37; }
 
-  #translate-bar-container { padding:12px 0 4px; }
+  .feed { max-width:680px; margin:40px auto; padding:0 16px 20px; position:relative; z-index:1; }
 
-  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr)); gap:12px; max-width:1050px; margin:16px auto; padding:0 16px 80px; }
-  .ex-card { background:rgba(255,255,255,0.02); border:1px solid rgba(34,197,94,0.1); border-radius:14px; padding:18px; opacity:0; animation:up 0.4s ease forwards; transition:border-color 0.2s,transform 0.2s; }
-  .ex-card:hover { border-color:rgba(34,197,94,0.28); transform:translateY(-3px); }
-  @keyframes up { to{opacity:1} from{opacity:0;transform:translateY(14px)} }
-  .ex-name { font-family:'Barlow Condensed',sans-serif; font-size:clamp(1.1rem,3vw,1.35rem); font-weight:700; color:#22c55e; margin-bottom:9px; line-height:1.2; }
-  .ex-badges { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:10px; }
-  .badge { padding:2px 9px; border-radius:100px; font-size:0.66rem; text-transform:uppercase; letter-spacing:0.08em; }
-  .badge-type { background:rgba(132,204,22,0.1); border:1px solid rgba(132,204,22,0.2); color:#84cc16; }
-  .badge-diff { background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.2); color:#22c55e; }
-  .ex-instructions { font-size:clamp(0.8rem,2.5vw,0.87rem); line-height:1.65; color:rgba(212,240,212,0.58); font-weight:300; }
+  .quote-card { position:relative; padding:32px 28px 24px 40px; margin-bottom:14px; border-left:1px solid rgba(212,175,55,0.2); opacity:0; animation:fadeSlide 0.5s ease forwards; }
+  .quote-card::before { content:'"'; position:absolute; left:-2px; top:16px; font-family:'Libre Baskerville',serif; font-size:5rem; color:#d4af37; opacity:0.12; line-height:1; }
+  .quote-card:nth-child(1){animation-delay:.05s} .quote-card:nth-child(2){animation-delay:.1s} .quote-card:nth-child(3){animation-delay:.15s} .quote-card:nth-child(4){animation-delay:.2s} .quote-card:nth-child(5){animation-delay:.25s}
+  @keyframes fadeSlide { to{opacity:1;transform:translateY(0)} from{opacity:0;transform:translateY(12px)} }
 
-  .loading { text-align:center; padding:60px 16px; color:rgba(34,197,94,0.4); grid-column:1/-1; font-size:0.88rem; }
-  .error { text-align:center; padding:40px 16px; color:#ef4444; grid-column:1/-1; font-size:0.88rem; }
+  .quote-text { font-family:'Libre Baskerville',serif; font-style:italic; font-size:clamp(1rem,2.5vw,1.18rem); line-height:1.8; color:#f0ede8; }
+  .quote-meta { margin-top:14px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .quote-author { font-size:0.8rem; font-weight:500; color:#d4af37; letter-spacing:0.08em; }
+  .quote-work { font-size:0.75rem; color:rgba(240,237,232,0.3); font-style:italic; }
+  .quote-divider { color:rgba(240,237,232,0.15); font-size:0.7rem; }
+  .quote-cats { display:flex; gap:4px; flex-wrap:wrap; margin-top:8px; }
+  .quote-cat { padding:2px 8px; border:1px solid rgba(212,175,55,0.1); border-radius:100px; font-size:0.62rem; letter-spacing:0.1em; text-transform:uppercase; color:rgba(212,175,55,0.4); }
+
+  .load-wrap { text-align:center; margin:8px 0 80px; position:relative; z-index:1; }
+  .load-btn { padding:11px 36px; background:transparent; border:1px solid rgba(212,175,55,0.25); border-radius:100px; color:rgba(212,175,55,0.7); font-family:'Jost',sans-serif; font-size:0.78rem; letter-spacing:0.15em; text-transform:uppercase; cursor:pointer; transition:all 0.25s; }
+  .load-btn:hover { border-color:#d4af37; color:#d4af37; background:rgba(212,175,55,0.05); }
+  .load-btn:disabled { opacity:0.3; cursor:not-allowed; }
+
+  .loading { text-align:center; padding:60px 16px; color:rgba(212,175,55,0.3); font-size:0.85rem; letter-spacing:0.15em; text-transform:uppercase; }
+  .error { text-align:center; padding:40px 16px; color:#ef4444; font-size:0.85rem; }
 </style>
 </head>
 <body>
 <a href="../index.html" class="back">← Hub</a>
+
 <header>
-  <h1>💪 Exercises</h1>
-
-  <div class="muscles">
-    <button class="muscle-btn active" onclick="load('biceps',this)">Biceps</button>
-    <button class="muscle-btn" onclick="load('triceps',this)">Triceps</button>
-    <button class="muscle-btn" onclick="load('chest',this)">Chest</button>
-    <button class="muscle-btn" onclick="load('back',this)">Back</button>
-    <button class="muscle-btn" onclick="load('shoulders',this)">Shoulders</button>
-    <button class="muscle-btn" onclick="load('abdominals',this)">Abs</button>
-    <button class="muscle-btn" onclick="load('quadriceps',this)">Quads</button>
-    <button class="muscle-btn" onclick="load('hamstrings',this)">Hamstrings</button>
-    <button class="muscle-btn" onclick="load('glutes',this)">Glutes</button>
-    <button class="muscle-btn" onclick="load('calves',this)">Calves</button>
-  </div>
-
-  <!-- SELECTORES DE FILTRO -->
-  <div class="filters">
-    <select id="type-select" onchange="load(currentMuscle)">
-      <option value="">All types</option>
-      <option value="cardio">Cardio</option>
-      <option value="olympic_weightlifting">Olympic Weightlifting</option>
-      <option value="plyometrics">Plyometrics</option>
-      <option value="powerlifting">Powerlifting</option>
-      <option value="strength">Strength</option>
-      <option value="stretching">Stretching</option>
-      <option value="strongman">Strongman</option>
-    </select>
-
-    <select id="difficulty-select" onchange="load(currentMuscle)">
-      <option value="">All difficulties</option>
-      <option value="beginner">Beginner</option>
-      <option value="intermediate">Intermediate</option>
-      <option value="expert">Expert</option>
-    </select>
-  </div>
-
+  <div class="header-rule"></div>
+  <h1>Words of <span class="accent">Wisdom</span></h1>
+  <p class="subtitle">Curated quotes · Filtered by category</p>
   <div id="translate-bar-container"></div>
 </header>
 
-<div class="grid" id="content"><div class="loading">Select a muscle group...</div></div>
+<div class="filters">
+  <button class="cat-btn active" data-cat="">All</button>
+  <button class="cat-btn" data-cat="wisdom">Wisdom</button>
+  <button class="cat-btn" data-cat="philosophy">Philosophy</button>
+  <button class="cat-btn" data-cat="life">Life</button>
+  <button class="cat-btn" data-cat="inspirational">Inspirational</button>
+  <button class="cat-btn" data-cat="success">Success</button>
+  <button class="cat-btn" data-cat="happiness">Happiness</button>
+  <button class="cat-btn" data-cat="love">Love</button>
+  <button class="cat-btn" data-cat="humor">Humor</button>
+  <button class="cat-btn" data-cat="courage">Courage</button>
+  <button class="cat-btn" data-cat="truth">Truth</button>
+  <button class="cat-btn" data-cat="nature">Nature</button>
+  <button class="cat-btn" data-cat="art">Art</button>
+  <button class="cat-btn" data-cat="freedom">Freedom</button>
+  <button class="cat-btn" data-cat="leadership">Leadership</button>
+</div>
 
+<div class="feed" id="feed">
+  <div class="loading">Loading quotes...</div>
+</div>
+<div class="load-wrap">
+  <button class="load-btn" id="load-btn" onclick="loadMore()">Load more</button>
+</div>
 <script src="../js/config.js"></script>
 <script src="../js/translate.js"></script>
-
 <script>
-  let rawData = [], currentLang = 'en', currentMuscle = 'biceps';
-  renderTranslateBar('translate-bar-container', async (lang) => { currentLang = lang; if(rawData.length) render(rawData,lang); });
 
-  async function render(data, lang) {
-    const N = data.map(e => e.name||''), I = data.map(e => e.instructions||'');
-    let tN = N, tI = I;
-    if(lang !== 'en') [tN, tI] = await Promise.all([translateTexts(N,lang), translateTexts(I,lang)]);
-    document.getElementById('content').innerHTML = data.map((e,i)=>`
-      <div class="ex-card">
-        <div class="ex-name">${tN[i]}</div>
-        <div class="ex-badges">
-          <span class="badge badge-type">${e.type||''}</span>
-          <span class="badge badge-diff">${e.difficulty||''}</span>
+  let currentCat = '', currentOffset = 0, currentLang = 'en';
+  let allQuotes = []; // accumulates all loaded quotes in English for re-translation
+
+  renderTranslateBar('translate-bar-container', async (lang) => {
+    currentLang = lang;
+    if (allQuotes.length) renderQuotes(allQuotes, false, lang);
+  });
+
+  // Category filter — reset and reload
+  document.querySelectorAll('.cat-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentCat = btn.dataset.cat;
+      currentOffset = 0;
+      allQuotes = [];
+      document.getElementById('feed').innerHTML = '<div class="loading">Loading quotes...</div>';
+      load(true);
+    });
+  });
+
+  async function renderQuotes(quotes, append, lang) {
+    // Collect texts to translate
+    const texts   = quotes.map(q => q.quote);
+    const authors = quotes.map(q => q.author || 'Unknown');
+    const works   = quotes.map(q => q.work || '');
+
+    let tTexts = texts, tAuthors = authors, tWorks = works;
+
+    if (lang !== 'en') {
+      const toTranslate = [...texts, ...authors, ...works.filter(w => w)];
+      // Translate all in one batch
+      tTexts   = await translateTexts(texts, lang);
+      tAuthors = await translateTexts(authors, lang);
+      // Only translate non-empty works
+      const worksNonEmpty = works.map((w, i) => ({ i, w })).filter(x => x.w);
+      if (worksNonEmpty.length) {
+        const tW = await translateTexts(worksNonEmpty.map(x => x.w), lang);
+        tWorks = [...works];
+        worksNonEmpty.forEach((x, j) => { tWorks[x.i] = tW[j]; });
+      }
+    }
+
+    const html = quotes.map((q, i) => `
+      <div class="quote-card">
+        <p class="quote-text">${tTexts[i]}</p>
+        <div class="quote-meta">
+          <span class="quote-author">— ${tAuthors[i]}</span>
+          ${tWorks[i] ? `<span class="quote-divider">·</span><span class="quote-work">${tWorks[i]}</span>` : ''}
         </div>
-        <p class="ex-instructions">${tI[i]}</p>
+        ${q.categories?.length ? `<div class="quote-cats">${q.categories.map(c => `<span class="quote-cat">${c}</span>`).join('')}</div>` : ''}
       </div>`).join('');
-  }
 
-  async function load(muscle, btn=null) {
-    currentMuscle = muscle;
-    document.querySelectorAll('.muscle-btn').forEach(b => b.classList.remove('active'));
-    if(btn) btn.classList.add('active');
-
-    const type = document.getElementById('type-select').value;
-    const difficulty = document.getElementById('difficulty-select').value;
-
-    document.getElementById('content').innerHTML = '<div class="loading">Loading exercises...</div>';
-    try {
-      let url = `${API}/api/exercises?muscle=${muscle}`;
-      if(type) url += `&type=${type}`;
-      if(difficulty) url += `&difficulty=${difficulty}`;
-
-      const r = await fetch(url);
-      rawData = await r.json();
-      if(!rawData.length){ document.getElementById('content').innerHTML='<div class="loading">No results.</div>'; return; }
-      render(rawData, currentLang);
-    } catch {
-      document.getElementById('content').innerHTML='<div class="error">Error connecting to backend.</div>';
+    const feed = document.getElementById('feed');
+    if (append) {
+      feed.insertAdjacentHTML('beforeend', html);
+    } else {
+      feed.innerHTML = html || '<div class="loading">No quotes found.</div>';
     }
   }
 
-  load('biceps');
+  async function load(reset = false) {
+    const btn = document.getElementById('load-btn');
+    btn.disabled = true;
+    try {
+      const params = new URLSearchParams({ offset: currentOffset, limit: 2 });
+      if (currentCat) params.set('categories', currentCat);
+      const r = await fetch(`${API}/api/quotes?${params}`);
+      const data = await r.json();
+      if (!Array.isArray(data) || data.length === 0) {
+        if (!reset) document.getElementById('feed').insertAdjacentHTML('beforeend', '<div class="loading" style="padding:20px">No more quotes.</div>');
+        return;
+      }
+      if (reset) allQuotes = data;
+      else allQuotes = [...allQuotes, ...data];
+      await renderQuotes(data, !reset, currentLang);
+      currentOffset += data.length;
+    } catch {
+      document.getElementById('feed').innerHTML = '<div class="error">Error connecting to backend.</div>';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function loadMore() { await load(false); }
+  load(true);
 </script>
 </body>
 </html>
