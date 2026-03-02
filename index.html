@@ -16,8 +16,17 @@
 
   header { padding:48px 20px 36px; text-align:center; position:relative; }
   header::after { content:''; position:absolute; bottom:0; left:50%; transform:translateX(-50%); width:100px; height:2px; background:linear-gradient(90deg,transparent,var(--accent1),transparent); }
-  .logo { font-family:'Bebas Neue',sans-serif; font-size:clamp(2.8rem,10vw,7rem); letter-spacing:0.05em; background:linear-gradient(135deg,var(--accent1),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; line-height:1; }
-  .tagline { margin-top:10px; color:var(--muted); font-size:clamp(0.7rem,2.5vw,0.95rem); letter-spacing:0.12em; text-transform:uppercase; font-weight:300; padding:0 10px; }
+.logo {
+  width: 100%;       /* Que ocupe todo el ancho del contenedor */
+  max-width: 400px;  /* Ajusta a tu tamaño máximo deseado */
+  margin: 0 auto;    /* Centrar si quieres */
+}
+
+.logo img {
+  width: 100%;       /* La imagen nunca excede el contenedor */
+  height: auto;      /* Mantiene proporción */
+  display: block;    /* Evita espacios extra debajo */
+}  .tagline { margin-top:10px; color:var(--muted); font-size:clamp(0.7rem,2.5vw,0.95rem); letter-spacing:0.12em; text-transform:uppercase; font-weight:300; padding:0 10px; }
 
   .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; padding:48px 20px; max-width:1400px; margin:0 auto; }
 
