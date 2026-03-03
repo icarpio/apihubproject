@@ -115,7 +115,7 @@ async function render(data, lang) {
 
   document.getElementById('content').innerHTML =
     data.slice(0,6).map((d,i) => {
-      const preview = translatedIngredientsAll[i].slice(0,3); // solo los 3 primeros para la card
+      const preview = translatedIngredientsAll[i].slice(0,6); // solo los 3 primeros para la card
       return `
       <div class="cocktail-card">
         <div class="card-header">

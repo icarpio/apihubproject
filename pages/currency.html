@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Currency · API Hub</title>
+<title>Currency · API Ninjas Hub</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400&display=swap" rel="stylesheet"/>
 <style>
   *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
@@ -91,12 +91,8 @@
   </div>
 </div>
 
-
-
-<script src="../js/config.js"></script>
-
 <script>
-  const API = CONFIG.API_URL;
+  const API = 'http://localhost:8000';
 
   function swapCurrencies() {
     const h = document.getElementById('have'), w = document.getElementById('want');
@@ -136,19 +132,21 @@
     btn.textContent = 'Converting…'; btn.disabled = true;
 
     try {
-      const r = await fetch(`${API}/api/convertcurrency?have=${have}&want=${want}&amount=${amount}`);
+      // Use ExchangeRate-API (open, no key, CORS-friendly)
+      const r = await fetch(`https://open.er-api.com/v6/latest/${have}`);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const d = await r.json();
 
       btn.textContent = 'Convert'; btn.disabled = false;
 
-      if (d.error || d.new_amount == null) {
-        showError(d.error || 'Could not convert. Check the currency codes (e.g. USD, EUR, GBP, JPY).');
+      if (d.result !== 'success' || !d.rates || d.rates[want] == null) {
+        showError('Could not convert. Check the currency codes (e.g. USD, EUR, GBP, JPY).');
         return;
       }
 
-      const newAmt  = Number(d.new_amount);
-      const rate    = newAmt / amount;
-      const dateStr = d.date ? ` · Rate from ${d.date}` : '';
+      const rate    = d.rates[want];
+      const newAmt  = amount * rate;
+      const dateStr = d.time_last_update_utc ? ` · Rate from ${new Date(d.time_last_update_utc).toLocaleDateString('en-GB')}` : '';
 
       document.getElementById('res-label').textContent  = `${amount} ${have} equals`;
       document.getElementById('res-amount').textContent = `${newAmt.toLocaleString('en', {minimumFractionDigits:2, maximumFractionDigits:2})} ${want}`;
@@ -157,7 +155,7 @@
 
     } catch (e) {
       btn.textContent = 'Convert'; btn.disabled = false;
-      showError('Error connecting to backend. Make sure it is running on port 8000.');
+      showError(`Error: ${e.message || 'Could not fetch exchange rates. Please try again.'}`);
     }
   }
 </script>
