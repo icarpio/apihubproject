@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>English Teacher · AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;0,700;1,300;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:        #f0f4ff;
+    --surface:   #ffffff;
+    --border:    rgba(59,130,246,0.15);
+    --blue:      #3b82f6;
+    --blue2:     #60a5fa;
+    --blue-dark: #1d4ed8;
+    --green:     #16a34a;
+    --amber:     #d97706;
+    --red:       #dc2626;
+    --ink:       #1e293b;
+    --muted:     rgba(30,41,59,0.45);
+    --alex-bg:   #eff6ff;
+    --user-bg:   #f8fafc;
+    --shadow:    0 2px 16px rgba(59,130,246,0.08);
+  }
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; }
+  body { background:var(--bg); color:var(--ink); font-family:'Plus Jakarta Sans',sans-serif; display:flex; flex-direction:column; overflow:hidden; }
+  body::before { content:''; position:fixed; inset:0;
+    background:radial-gradient(ellipse at 90% 5%, rgba(59,130,246,0.07) 0%, transparent 50%),
+               radial-gradient(ellipse at 5% 95%, rgba(96,165,250,0.05) 0%, transparent 45%);
+    pointer-events:none; z-index:0; }
+
+  /* ── TOP BAR ── */
+  .topbar { display:flex; align-items:center; gap:12px; padding:10px 16px; background:rgba(255,255,255,0.95); border-bottom:1px solid var(--border); backdrop-filter:blur(12px); z-index:10; flex-shrink:0; flex-wrap:wrap; }
+  .back { text-decoration:none; color:var(--blue); font-size:0.7rem; letter-spacing:0.12em; text-transform:uppercase; font-weight:600; flex-shrink:0; }
+  .topbar-div { width:1px; height:20px; background:var(--border); flex-shrink:0; }
+
+  .teacher-info { display:flex; align-items:center; gap:10px; flex:1; min-width:0; }
+  .teacher-avatar { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,var(--blue),var(--blue2)); display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; box-shadow:0 2px 8px rgba(59,130,246,0.3); }
+  .teacher-name { font-weight:600; font-size:0.92rem; color:var(--ink); }
+  .teacher-sub  { font-size:0.65rem; color:var(--muted); letter-spacing:0.05em; }
+
+  /* Level + Topic selectors */
+  .controls { display:flex; gap:8px; flex-wrap:wrap; }
+  .ctrl-group { display:flex; align-items:center; gap:6px; }
+  .ctrl-label { font-size:0.65rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); white-space:nowrap; }
+  .ctrl-select { padding:5px 10px; background:var(--bg); border:1px solid var(--border); border-radius:8px; font-family:'Plus Jakarta Sans',sans-serif; font-size:0.78rem; color:var(--ink); outline:none; cursor:pointer; transition:border-color 0.2s; }
+  .ctrl-select:focus { border-color:var(--blue); }
+  .reset-btn { padding:5px 12px; background:transparent; border:1px solid var(--border); border-radius:8px; color:var(--muted); font-size:0.7rem; cursor:pointer; transition:all 0.2s; font-family:'Plus Jakarta Sans',sans-serif; white-space:nowrap; }
+  .reset-btn:hover { border-color:var(--blue); color:var(--blue); }
+
+  /* ── LAYOUT: chat + sidebar ── */
+  .layout { display:flex; flex:1; overflow:hidden; position:relative; z-index:1; }
+
+  /* ── SIDEBAR (corrections + vocab) ── */
+  .sidebar { width:280px; flex-shrink:0; background:var(--surface); border-left:1px solid var(--border); display:flex; flex-direction:column; overflow-y:auto; }
+  @media(max-width:700px) { .sidebar { display:none; } }
+  .sidebar::-webkit-scrollbar { width:3px; }
+  .sidebar::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+  .sidebar-section { padding:16px; border-bottom:1px solid var(--border); }
+  .sidebar-title { font-size:0.62rem; text-transform:uppercase; letter-spacing:0.18em; color:var(--muted); margin-bottom:12px; display:flex; align-items:center; gap:6px; }
+
+  /* Stats */
+  .stats-row { display:flex; gap:8px; }
+  .stat-box { flex:1; background:var(--bg); border-radius:10px; padding:10px 8px; text-align:center; }
+  .stat-num  { font-family:'Fraunces',serif; font-size:1.5rem; font-weight:600; color:var(--blue); line-height:1; }
+  .stat-lbl  { font-size:0.6rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; margin-top:2px; }
+
+  /* Corrections log */
+  .corrections-list { display:flex; flex-direction:column; gap:8px; }
+  .correction-item { background:#fef9f0; border:1px solid rgba(217,119,6,0.15); border-radius:8px; padding:10px 12px; }
+  .correction-item .wrong { font-size:0.75rem; color:var(--red); text-decoration:line-through; margin-bottom:3px; }
+  .correction-item .right { font-size:0.78rem; color:var(--green); font-weight:500; margin-bottom:3px; }
+  .correction-item .expl  { font-size:0.72rem; color:var(--muted); line-height:1.4; }
+  .corrections-empty { font-size:0.78rem; color:var(--muted); font-style:italic; text-align:center; padding:12px 0; }
+
+  /* Vocabulary log */
+  .vocab-list { display:flex; flex-direction:column; gap:8px; }
+  .vocab-item { background:#f0fdf4; border:1px solid rgba(22,163,74,0.15); border-radius:8px; padding:10px 12px; }
+  .vocab-word { font-size:0.88rem; font-weight:600; color:var(--green); margin-bottom:2px; }
+  .vocab-meaning { font-size:0.75rem; color:var(--ink); margin-bottom:4px; }
+  .vocab-example { font-size:0.72rem; color:var(--muted); font-style:italic; line-height:1.4; }
+  .vocab-empty { font-size:0.78rem; color:var(--muted); font-style:italic; text-align:center; padding:12px 0; }
+
+  /* ── CHAT ── */
+  .chat-col { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+
+  .messages { flex:1; overflow-y:auto; padding:20px 16px; display:flex; flex-direction:column; gap:14px; }
+  .messages::-webkit-scrollbar { width:4px; }
+  .messages::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+  /* Welcome */
+  .welcome { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:24px; text-align:center; box-shadow:var(--shadow); }
+  .welcome-emoji { font-size:2.5rem; margin-bottom:12px; }
+  .welcome h2 { font-family:'Fraunces',serif; font-size:1.4rem; font-weight:600; color:var(--blue-dark); margin-bottom:6px; }
+  .welcome p { font-size:0.85rem; color:var(--muted); line-height:1.6; margin-bottom:16px; }
+  .welcome-chips { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
+  .w-chip { padding:6px 14px; background:var(--bg); border:1px solid var(--border); border-radius:100px; font-size:0.75rem; color:var(--blue); cursor:pointer; transition:all 0.2s; }
+  .w-chip:hover { background:var(--blue); color:#fff; border-color:var(--blue); }
+
+  /* Bubbles */
+  .msg { display:flex; gap:10px; max-width:85%; animation:msgIn 0.3s ease forwards; opacity:0; }
+  @keyframes msgIn { to{opacity:1;transform:translateY(0)} from{opacity:0;transform:translateY(8px)} }
+  .msg.alex { align-self:flex-start; }
+  .msg.user { align-self:flex-end; flex-direction:row-reverse; }
+
+  .msg-avatar { width:30px; height:30px; border-radius:50%; flex-shrink:0; margin-top:2px; display:flex; align-items:center; justify-content:center; font-size:0.9rem; }
+  .msg-avatar.alex-av { background:linear-gradient(135deg,var(--blue),var(--blue2)); box-shadow:0 2px 8px rgba(59,130,246,0.3); }
+  .msg-avatar.user-av { background:#e2e8f0; }
+
+  .msg-wrap { display:flex; flex-direction:column; gap:6px; }
+  .msg-name { font-size:0.6rem; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted); }
+  .msg.user .msg-name { text-align:right; }
+
+  .bubble { padding:11px 15px; border-radius:14px; font-size:clamp(0.85rem,2.5vw,0.92rem); line-height:1.65; }
+  .msg.alex .bubble { background:var(--alex-bg); border:1px solid rgba(59,130,246,0.12); border-bottom-left-radius:4px; color:var(--ink); }
+  .msg.user .bubble { background:var(--blue); border-bottom-right-radius:4px; color:#fff; }
+
+  /* Inline correction inside bubble */
+  .inline-correction { margin-top:8px; padding:8px 10px; background:#fef9f0; border-radius:8px; border-left:2px solid var(--amber); font-size:0.78rem; color:var(--ink); line-height:1.5; }
+  .inline-vocab { margin-top:8px; padding:8px 10px; background:#f0fdf4; border-radius:8px; border-left:2px solid var(--green); font-size:0.78rem; color:var(--ink); line-height:1.5; }
+
+  /* Typing */
+  .typing-wrap { display:flex; gap:10px; align-items:center; align-self:flex-start; opacity:0; transition:opacity 0.3s; }
+  .typing-wrap.visible { opacity:1; }
+  .typing-av { width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg,var(--blue),var(--blue2)); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:0.9rem; }
+  .typing-dots { display:flex; gap:4px; padding:11px 15px; background:var(--alex-bg); border:1px solid rgba(59,130,246,0.12); border-radius:14px; border-bottom-left-radius:4px; }
+  .typing-dots span { width:6px; height:6px; background:var(--blue2); border-radius:50%; animation:dot 1.2s ease-in-out infinite; }
+  .typing-dots span:nth-child(2){animation-delay:.2s} .typing-dots span:nth-child(3){animation-delay:.4s}
+  @keyframes dot { 0%,100%{transform:translateY(0);opacity:.4} 50%{transform:translateY(-5px);opacity:1} }
+
+  /* ── INPUT ── */
+  .input-bar { padding:12px 16px; border-top:1px solid var(--border); background:rgba(255,255,255,0.95); backdrop-filter:blur(8px); flex-shrink:0; }
+  .input-row { display:flex; gap:8px; align-items:flex-end; }
+  .input-row textarea { flex:1; padding:10px 14px; background:var(--bg); border:1px solid var(--border); border-radius:12px; font-family:'Plus Jakarta Sans',sans-serif; font-size:0.9rem; color:var(--ink); outline:none; resize:none; max-height:100px; line-height:1.5; transition:border-color 0.2s; }
+  .input-row textarea:focus { border-color:var(--blue); background:#fff; }
+  .input-row textarea::placeholder { color:var(--muted); }
+  .send-btn { width:40px; height:40px; background:var(--blue); border:none; border-radius:10px; color:#fff; font-size:1.1rem; cursor:pointer; transition:all 0.2s; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+  .send-btn:hover { background:var(--blue-dark); transform:translateY(-1px); }
+  .send-btn:disabled { opacity:.4; cursor:not-allowed; transform:none; }
+  .input-hint { font-size:0.62rem; color:var(--muted); margin-top:5px; letter-spacing:.05em; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="../index.html" class="back">← Hub</a>
+  <div class="topbar-div"></div>
+  <div class="teacher-info">
+    <div class="teacher-avatar">👨‍🏫</div>
+    <div>
+      <div class="teacher-name">Alex — English Teacher</div>
+      <div class="teacher-sub">Tu profesor personal de inglés · AI</div>
+    </div>
+  </div>
+  <div class="controls">
+    <div class="ctrl-group">
+      <span class="ctrl-label">Nivel</span>
+      <select class="ctrl-select" id="level" onchange="resetChat()">
+        <option value="A2">A2 · Básico</option>
+        <option value="B1" selected>B1 · Intermedio</option>
+        <option value="B2">B2 · Avanzado</option>
+        <option value="C1">C1 · Experto</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <span class="ctrl-label">Tema</span>
+      <select class="ctrl-select" id="topic" onchange="resetChat()">
+        <option value="daily life">🏠 Vida cotidiana</option>
+        <option value="travel">✈️ Viajes</option>
+        <option value="work and business">💼 Trabajo</option>
+        <option value="food and restaurants">🍽 Comida</option>
+        <option value="technology">💻 Tecnología</option>
+        <option value="health and wellbeing">🏃 Salud</option>
+        <option value="culture and arts">🎭 Cultura</option>
+        <option value="sports">⚽ Deportes</option>
+        <option value="environment">🌿 Medio ambiente</option>
+        <option value="current events">📰 Actualidad</option>
+      </select>
+    </div>
+    <button class="reset-btn" onclick="resetChat()">↺ Reset</button>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- Chat -->
+  <div class="chat-col">
+    <div class="messages" id="messages">
+      <div class="welcome" id="welcome">
+        <div class="welcome-emoji">👨‍🏫</div>
+        <h2>Hello! I'm Alex</h2>
+        <p>Tu profesor de inglés personal. Selecciona tu nivel y tema arriba, y empieza a practicar. Yo te ayudo con gramática, vocabulario y correcciones — ¡sin miedo a equivocarse!</p>
+        <div class="welcome-chips">
+          <button class="w-chip" onclick="startChat('Hi Alex! Let\'s practice English.')">👋 Empezar</button>
+          <button class="w-chip" onclick="startChat('Can you give me a vocabulary exercise?')">✏️ Ejercicio</button>
+          <button class="w-chip" onclick="startChat('What vocabulary should I know for this topic?')">📚 Vocabulario</button>
+          <button class="w-chip" onclick="startChat('I don\'t understand the present perfect. Can you explain?')">❓ Tengo una duda</button>
+        </div>
+      </div>
+      <div class="typing-wrap" id="typing">
+        <div class="typing-av">👨‍🏫</div>
+        <div class="typing-dots"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+    <div class="input-bar">
+      <div class="input-row">
+        <textarea id="input" rows="1" placeholder="Write in English… (o en español si tienes dudas)"></textarea>
+        <button class="send-btn" id="send-btn" onclick="send()">➤</button>
+      </div>
+      <div class="input-hint">Enter para enviar · Shift+Enter nueva línea</div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">📊 Progreso</div>
+      <div class="stats-row">
+        <div class="stat-box"><div class="stat-num" id="stat-msgs">0</div><div class="stat-lbl">Mensajes</div></div>
+        <div class="stat-box"><div class="stat-num" id="stat-corrections">0</div><div class="stat-lbl">Correcciones</div></div>
+        <div class="stat-box"><div class="stat-num" id="stat-vocab">0</div><div class="stat-lbl">Palabras</div></div>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">💡 Correcciones</div>
+      <div class="corrections-list" id="corrections-list">
+        <div class="corrections-empty">Aún sin correcciones — ¡sigue practicando!</div>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">📚 Vocabulario</div>
+      <div class="vocab-list" id="vocab-list">
+        <div class="vocab-empty">Las palabras nuevas aparecerán aquí.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../js/config.js"></script>
+<script>
+  const API = CONFIG.API_URL; 
+  let history = [], isThinking = false;
+  let totalMsgs = 0, totalCorrections = 0, totalVocab = 0;
+
+  const messagesEl = document.getElementById('messages');
+  const inputEl    = document.getElementById('input');
+  const typingEl   = document.getElementById('typing');
+
+  inputEl.addEventListener('input', () => {
+    inputEl.style.height = 'auto';
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 100) + 'px';
+  });
+  inputEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+  });
+
+  function scrollBottom() { messagesEl.scrollTop = messagesEl.scrollHeight; }
+  function hideWelcome()  { const w = document.getElementById('welcome'); if (w) w.style.display = 'none'; }
+
+  function appendMsg(role, content, correction, vocabulary) {
+    hideWelcome();
+    const isAlex = role === 'assistant';
+    const div = document.createElement('div');
+    div.className = `msg ${isAlex ? 'alex' : 'user'}`;
+
+    const corrHTML = correction ? `<div class="inline-correction">💡 <b>Tip:</b> ${escHtml(correction)}</div>` : '';
+    const vocabHTML = vocabulary && vocabulary.length ? vocabulary.map(v =>
+      `<div class="inline-vocab">📚 <b>${escHtml(v.word)}</b> = ${escHtml(v.meaning_es)}${v.example ? ` · <i>"${escHtml(v.example)}"</i>` : ''}</div>`
+    ).join('') : '';
+
+    div.innerHTML = `
+      <div class="msg-avatar ${isAlex ? 'alex-av' : 'user-av'}">${isAlex ? '👨‍🏫' : '🧑'}</div>
+      <div class="msg-wrap">
+        <div class="msg-name">${isAlex ? 'Alex' : 'Tú'}</div>
+        <div class="bubble">${escHtml(content).replace(/\n/g,'<br>')}
+          ${isAlex ? corrHTML + vocabHTML : ''}
+        </div>
+      </div>`;
+    messagesEl.insertBefore(div, typingEl);
+    scrollBottom();
+  }
+
+  function setThinking(val) {
+    isThinking = val;
+    typingEl.classList.toggle('visible', val);
+    document.getElementById('send-btn').disabled = val;
+    if (val) scrollBottom();
+  }
+
+  function addCorrection(text) {
+    // Parse "Instead of 'X', say 'Y' — explanation"
+    const list = document.getElementById('corrections-list');
+    if (list.querySelector('.corrections-empty')) list.innerHTML = '';
+    const div = document.createElement('div');
+    div.className = 'correction-item';
+    // Try to extract wrong/right
+    const match = text.match(/Instead of ['"](.+?)['"],\s*say ['"](.+?)['"]\s*[—–-]\s*(.*)/i);
+    if (match) {
+      div.innerHTML = `<div class="wrong">✗ ${escHtml(match[1])}</div><div class="right">✓ ${escHtml(match[2])}</div><div class="expl">${escHtml(match[3])}</div>`;
+    } else {
+      div.innerHTML = `<div class="expl">${escHtml(text)}</div>`;
+    }
+    list.prepend(div);
+    totalCorrections++;
+    document.getElementById('stat-corrections').textContent = totalCorrections;
+  }
+
+  function addVocab(items) {
+    const list = document.getElementById('vocab-list');
+    if (list.querySelector('.vocab-empty')) list.innerHTML = '';
+    items.forEach(v => {
+      const div = document.createElement('div');
+      div.className = 'vocab-item';
+      div.innerHTML = `<div class="vocab-word">${escHtml(v.word)}</div>
+        <div class="vocab-meaning">${escHtml(v.meaning_es)}</div>
+        ${v.example ? `<div class="vocab-example">"${escHtml(v.example)}"</div>` : ''}`;
+      list.prepend(div);
+      totalVocab++;
+    });
+    document.getElementById('stat-vocab').textContent = totalVocab;
+  }
+
+  async function send() {
+    const text = inputEl.value.trim();
+    if (!text || isThinking) return;
+
+    inputEl.value = ''; inputEl.style.height = 'auto';
+    appendMsg('user', text);
+    history.push({ role: 'user', content: text });
+    totalMsgs++;
+    document.getElementById('stat-msgs').textContent = totalMsgs;
+    setThinking(true);
+
+    try {
+      const r = await fetch(`${API}/api/english-teacher`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: history,
+          level: document.getElementById('level').value,
+          topic: document.getElementById('topic').value,
+        }),
+      });
+      if (!r.ok) { const e = await r.json(); throw new Error(e.detail || `HTTP ${r.status}`); }
+      const data = await r.json();
+      setThinking(false);
+      appendMsg('assistant', data.reply, data.correction, data.vocabulary);
+      history.push({ role: 'assistant', content: data.reply });
+      if (data.correction) addCorrection(data.correction);
+      if (data.vocabulary?.length) addVocab(data.vocabulary);
+    } catch(e) {
+      setThinking(false);
+      appendMsg('assistant', `Sorry, something went wrong. (${e.message})`);
+    }
+  }
+
+  function startChat(text) {
+    inputEl.value = text;
+    send();
+  }
+
+  function resetChat() {
+    history = [];
+    totalMsgs = 0; totalCorrections = 0; totalVocab = 0;
+    document.getElementById('stat-msgs').textContent = '0';
+    document.getElementById('stat-corrections').textContent = '0';
+    document.getElementById('stat-vocab').textContent = '0';
+    document.querySelectorAll('.msg').forEach(el => el.remove());
+    document.getElementById('corrections-list').innerHTML = '<div class="corrections-empty">Aún sin correcciones — ¡sigue practicando!</div>';
+    document.getElementById('vocab-list').innerHTML = '<div class="vocab-empty">Las palabras nuevas aparecerán aquí.</div>';
+    const w = document.getElementById('welcome');
+    if (w) w.style.display = 'block';
+  }
+
+  function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+</script>
+</body>
+</html>

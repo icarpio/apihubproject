@@ -1,5 +1,5 @@
 /**
- * translate.js — shared translation helper for API Ninjas Hub
+ * translate.js — shared translation helper for API Hub
  */
 
 const API = CONFIG.API_URL;

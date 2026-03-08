@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Story Generator · AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Mulish:wght@300;400;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:      #0f0e0c;
+    --surface: #161410;
+    --surface2:#1e1b16;
+    --border:  rgba(220,180,100,0.14);
+    --gold:    #dcb464;
+    --gold2:   #f5d78e;
+    --red:     #c0392b;
+    --text:    #ede8de;
+    --muted:   rgba(237,232,222,0.38);
+    --ink:     rgba(237,232,222,0.82);
+  }
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  body { min-height:100vh; background:var(--bg); color:var(--text); font-family:'Mulish',sans-serif; overflow-x:hidden; }
+  body::before { content:''; position:fixed; inset:0; background:
+    radial-gradient(ellipse at 50% 0%, rgba(220,180,100,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 0% 100%, rgba(192,57,43,0.04) 0%, transparent 50%);
+    pointer-events:none; z-index:0; }
+
+  .back { position:fixed; top:14px; left:14px; z-index:100; text-decoration:none; color:var(--gold); font-size:0.72rem; letter-spacing:0.15em; text-transform:uppercase; background:rgba(15,14,12,0.92); padding:7px 14px; border-radius:100px; border:1px solid var(--border); backdrop-filter:blur(8px); font-family:'Mulish',sans-serif; }
+
+  /* ── HEADER ── */
+  header { text-align:center; padding:clamp(52px,8vw,80px) 16px clamp(20px,4vw,32px); position:relative; z-index:1; }
+  .header-ornament { font-size:1.2rem; color:var(--gold); opacity:0.5; letter-spacing:0.5em; margin-bottom:14px; }
+  h1 { font-family:'Spectral',serif; font-size:clamp(2.2rem,9vw,6rem); font-weight:300; line-height:1; letter-spacing:-0.01em; }
+  h1 em { font-style:italic; color:var(--gold2); }
+  .tagline { margin-top:10px; color:var(--muted); font-size:clamp(0.62rem,2vw,0.78rem); letter-spacing:0.22em; text-transform:uppercase; }
+  #translate-bar-container { padding:10px 0 0; }
+
+  /* ── FORM ── */
+  .form-wrap { max-width:640px; margin:28px auto 0; padding:0 14px; position:relative; z-index:1; }
+  .form-card { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:clamp(20px,4vw,30px); }
+
+  .field { margin-bottom:16px; }
+  .field label { display:block; font-size:0.63rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted); margin-bottom:7px; }
+  .field input, .field textarea, .field select {
+    width:100%; padding:11px 15px; background:rgba(255,255,255,0.03);
+    border:1px solid var(--border); border-radius:10px; color:var(--text);
+    font-family:'Mulish',sans-serif; font-size:clamp(0.85rem,2.5vw,0.92rem);
+    outline:none; transition:border-color 0.2s;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus { border-color:var(--gold); }
+  .field input::placeholder, .field textarea::placeholder { color:var(--muted); }
+  .field textarea { resize:vertical; min-height:72px; line-height:1.6; }
+  .field select option { background:var(--surface); }
+
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media(max-width:420px) { .form-row { grid-template-columns:1fr; } }
+
+  .gen-btn { width:100%; padding:14px; background:linear-gradient(135deg,var(--gold),var(--gold2)); border:none; border-radius:12px; color:#0f0e0c; font-family:'Spectral',serif; font-size:1.05rem; font-style:italic; cursor:pointer; transition:all 0.25s; margin-top:4px; font-weight:600; }
+  .gen-btn:hover { transform:translateY(-2px); box-shadow:0 12px 32px rgba(220,180,100,0.25); }
+  .gen-btn:active { transform:scale(0.99); }
+  .gen-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; box-shadow:none; }
+
+  /* Quick prompts */
+  .quick-prompts { margin-top:14px; }
+  .quick-label { font-size:0.6rem; letter-spacing:0.18em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+  .prompts-grid { display:flex; flex-wrap:wrap; gap:6px; }
+  .prompt-pill { padding:5px 12px; background:transparent; border:1px solid var(--border); border-radius:8px; color:var(--muted); font-size:0.72rem; cursor:pointer; transition:all 0.2s; font-family:'Mulish',sans-serif; text-align:left; }
+  .prompt-pill:hover { border-color:var(--gold); color:var(--gold); }
+
+  /* ── STATUS ── */
+  .status { text-align:center; padding:60px 16px; display:none; position:relative; z-index:1; }
+  .quill { font-size:2rem; animation:write 1.2s ease-in-out infinite; display:inline-block; }
+  @keyframes write { 0%,100%{transform:rotate(-10deg) translate(0,0)} 50%{transform:rotate(5deg) translate(4px,-4px)} }
+  .status-text { margin-top:14px; color:var(--muted); font-size:0.82rem; letter-spacing:0.12em; text-transform:uppercase; font-family:'Spectral',serif; font-style:italic; }
+
+  /* ── STORY RESULT ── */
+  .result { max-width:760px; margin:40px auto; padding:0 14px clamp(40px,8vw,80px); display:none; opacity:0; transform:translateY(20px); transition:opacity 0.6s ease,transform 0.6s ease; position:relative; z-index:1; }
+  .result.visible { opacity:1; transform:translateY(0); }
+
+  /* Book-like card */
+  .story-card { background:var(--surface); border:1px solid var(--border); border-radius:18px; overflow:hidden; }
+
+  .story-header { padding:clamp(24px,5vw,40px) clamp(20px,5vw,40px) 24px; text-align:center; border-bottom:1px solid var(--border); background:var(--surface2); }
+  .story-genre-badge { display:inline-block; padding:3px 14px; border:1px solid var(--border); border-radius:100px; font-size:0.65rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--gold); margin-bottom:16px; }
+  .story-title { font-family:'Spectral',serif; font-size:clamp(1.6rem,6vw,2.8rem); font-weight:300; font-style:italic; color:var(--gold2); line-height:1.2; }
+  .story-meta { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; margin-top:14px; }
+  .story-meta-item { font-size:0.72rem; color:var(--muted); display:flex; align-items:center; gap:5px; }
+
+  /* Story text — typeset like a book */
+  .story-body { padding:clamp(24px,5vw,48px) clamp(20px,5vw,52px); }
+  .story-text { font-family:'Spectral',serif; font-size:clamp(0.95rem,2.5vw,1.08rem); line-height:2; color:var(--ink); font-weight:300; }
+  .story-text p { margin-bottom:1.4em; text-indent:2em; }
+  .story-text p:first-child { text-indent:0; }
+  .story-text p:first-child::first-letter {
+    font-size:3.5em; font-weight:600; color:var(--gold); float:left;
+    line-height:0.75; margin-right:6px; margin-top:6px;
+    font-family:'Spectral',serif;
+  }
+
+  /* Moral */
+  .story-moral { margin:0 clamp(20px,5vw,52px) clamp(20px,4vw,32px); padding:16px 20px; background:rgba(220,180,100,0.05); border-left:2px solid var(--gold); border-radius:0 10px 10px 0; }
+  .moral-label { font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--gold); margin-bottom:6px; }
+  .moral-text { font-family:'Spectral',serif; font-style:italic; font-size:clamp(0.9rem,2.5vw,1rem); color:rgba(237,232,222,0.65); line-height:1.7; font-weight:300; }
+
+  /* Regenerate */
+  .story-footer { padding:16px clamp(20px,5vw,40px) clamp(16px,4vw,28px); border-top:1px solid var(--border); display:flex; justify-content:center; }
+  .regen-btn { padding:9px 24px; background:transparent; border:1px solid var(--border); border-radius:100px; color:var(--muted); font-size:0.75rem; letter-spacing:0.12em; text-transform:uppercase; cursor:pointer; transition:all 0.2s; font-family:'Mulish',sans-serif; }
+  .regen-btn:hover { border-color:var(--gold); color:var(--gold); }
+
+  .error-msg { text-align:center; color:#ef4444; font-size:0.88rem; padding:20px; line-height:1.6; }
+</style>
+</head>
+<body>
+<a href="../index.html" class="back">← Hub</a>
+
+<header>
+  <div class="header-ornament">✦ ✦ ✦</div>
+  <h1>Story <em>Generator</em></h1>
+  <p class="tagline">Characters · Setting · Genre · AI Magic</p>
+  <div id="translate-bar-container"></div>
+</header>
+
+<div class="form-wrap">
+  <div class="form-card">
+    <div class="field">
+      <label>Characters</label>
+      <textarea id="characters" placeholder="e.g. a brave knight named Leo, a cunning fox, an old wizard..."></textarea>
+    </div>
+    <div class="field">
+      <label>Setting</label>
+      <input type="text" id="setting" placeholder="e.g. an enchanted forest in medieval times..."/>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>Genre</label>
+        <select id="genre">
+          <option value="fantasy">🧙 Fantasy</option>
+          <option value="adventure">⚔️ Adventure</option>
+          <option value="mystery">🔍 Mystery</option>
+          <option value="romance">💕 Romance</option>
+          <option value="horror">👻 Horror</option>
+          <option value="sci-fi">🚀 Sci-Fi</option>
+          <option value="comedy">😄 Comedy</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Length</label>
+        <select id="length">
+          <option value="short">Short (~300 words)</option>
+           <!--
+           <option value="medium" selected>Medium (~600 words)</option>
+          <option value="long">Long (~1000 words)</option>--> 
+        </select>
+      </div>
+    </div>
+    <button class="gen-btn" id="gen-btn" onclick="generate()">✦ Write my story</button>
+
+    <div class="quick-prompts">
+      <div class="quick-label">Quick prompts</div>
+      <div class="prompts-grid">
+        <button class="prompt-pill" onclick="setPrompt('a lost astronaut named Mara','an abandoned space station orbiting a dying star','sci-fi')">🚀 Lost in space</button>
+        <button class="prompt-pill" onclick="setPrompt('a young witch named Nora, her talking cat','a floating city above the clouds','fantasy')">🧙 Floating city</button>
+        <button class="prompt-pill" onclick="setPrompt('a detective named Cross, a mysterious stranger','1920s rainy Paris','mystery')">🔍 Paris mystery</button>
+        <button class="prompt-pill" onclick="setPrompt('a robot who wants to feel emotions','a world where humans and machines co-exist','sci-fi')">🤖 Feeling robot</button>
+        <button class="prompt-pill" onclick="setPrompt('two rival chefs named Marco and Sofia','a tiny village in Tuscany','romance')">❤️ Chef rivals</button>
+        <button class="prompt-pill" onclick="setPrompt('a cursed pirate captain, a ghost crew','the edge of the world','adventure')">🏴‍☠️ Ghost pirates</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="status" id="status">
+  <div class="quill">✍️</div>
+  <p class="status-text" id="status-text">Composing your story…</p>
+</div>
+
+<div class="result" id="result"></div>
+
+<script src="../js/config.js"></script>
+<script src="../js/translate.js"></script>
+<script>
+
+  let rawData = null, currentLang = 'en';
+
+  renderTranslateBar('translate-bar-container', async (lang) => {
+    currentLang = lang;
+    if (rawData) await renderResult(rawData, lang);
+  });
+
+  function setPrompt(characters, setting, genre) {
+    document.getElementById('characters').value = characters;
+    document.getElementById('setting').value = setting;
+    document.getElementById('genre').value = genre;
+  }
+
+  async function renderResult(d, lang) {
+    let title  = d.title;
+    let paragraphs = d.story.split('\n\n').filter(p => p.trim());
+    let moral  = d.moral || null;
+
+    if (lang !== 'en') {
+      const toTranslate = [title, ...paragraphs, ...(moral ? [moral] : [])];
+      const translated  = await translateTexts(toTranslate, lang);
+      title      = translated[0];
+      paragraphs = translated.slice(1, 1 + paragraphs.length);
+      moral      = moral ? translated[translated.length - 1] : null;
+    }
+
+    const storyHTML = paragraphs.map(p => `<p>${p.trim()}</p>`).join('');
+
+    const el = document.getElementById('result');
+    el.innerHTML = `
+      <div class="story-card">
+        <div class="story-header">
+          <div class="story-genre-badge">${d.genre}</div>
+          <div class="story-title">${title}</div>
+          <div class="story-meta">
+            <span class="story-meta-item">👥 ${d.characters}</span>
+            <span class="story-meta-item">📍 ${d.setting}</span>
+          </div>
+        </div>
+        <div class="story-body">
+          <div class="story-text">${storyHTML}</div>
+        </div>
+        ${moral ? `
+        <div class="story-moral">
+          <div class="moral-label">✦ Moral of the story</div>
+          <p class="moral-text">${moral}</p>
+        </div>` : ''}
+        <div class="story-footer">
+          <button class="regen-btn" onclick="generate()">↺ Generate another story</button>
+        </div>
+      </div>`;
+
+    el.style.display = 'block';
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('visible')));
+  }
+
+  const statusMessages = [
+    'Setting the scene…',
+    'Introducing the characters…',
+    'Building the plot…',
+    'Reaching the climax…',
+    'Crafting the ending…',
+  ];
+
+  async function generate() {
+    const characters = document.getElementById('characters').value.trim();
+    const setting    = document.getElementById('setting').value.trim();
+    const genre      = document.getElementById('genre').value;
+    const length     = document.getElementById('length').value;
+
+    if (!characters) { document.getElementById('characters').focus(); return; }
+    if (!setting)    { document.getElementById('setting').focus(); return; }
+
+    const btn = document.getElementById('gen-btn');
+    btn.disabled = true; btn.textContent = '✍️ Writing…';
+
+    const el = document.getElementById('result');
+    el.classList.remove('visible'); el.style.display = 'none';
+    rawData = null;
+
+    const statusEl  = document.getElementById('status-text');
+    const statusDiv = document.getElementById('status');
+    statusDiv.style.display = 'block';
+    let msgIdx = 0;
+    const msgInterval = setInterval(() => {
+      msgIdx = (msgIdx + 1) % statusMessages.length;
+      statusEl.textContent = statusMessages[msgIdx];
+    }, 2000);
+
+    try {
+      const r = await fetch(`${API}/api/story`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ characters, setting, genre, length }),
+      });
+      if (!r.ok) { const e = await r.json(); throw new Error(e.detail || `HTTP ${r.status}`); }
+      rawData = await r.json();
+      clearInterval(msgInterval);
+      statusDiv.style.display = 'none';
+      await renderResult(rawData, currentLang);
+    } catch(e) {
+      clearInterval(msgInterval);
+      statusDiv.style.display = 'none';
+      el.innerHTML = `<p class="error-msg">⚠️ ${e.message || 'Could not connect to backend.'}</p>`;
+      el.style.display = 'block';
+      requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('visible')));
+    }
+
+    btn.disabled = false; btn.textContent = '✦ Write my story';
+  }
+</script>
+</body>
+</html>

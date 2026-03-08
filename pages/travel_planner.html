@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Travel Planner · AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:       #0d1117;
+    --surface:  #131920;
+    --surface2: #1a2330;
+    --border:   rgba(251,146,60,0.15);
+    --orange:   #fb923c;
+    --orange2:  #fcd34d;
+    --sky:      #7dd3fc;
+    --text:     #e8f0f8;
+    --muted:    rgba(232,240,248,0.4);
+    --card-bg:  rgba(251,146,60,0.03);
+  }
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  body { min-height:100vh; background:var(--bg); color:var(--text); font-family:'Syne',sans-serif; overflow-x:hidden; }
+
+  body::before { content:''; position:fixed; inset:0; background:
+    radial-gradient(ellipse at 20% 0%, rgba(251,146,60,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(125,211,252,0.05) 0%, transparent 50%);
+    pointer-events:none; z-index:0; }
+
+  /* ── BACK ── */
+  .back { position:fixed; top:14px; left:14px; z-index:100; text-decoration:none; color:var(--orange); font-size:0.72rem; letter-spacing:0.15em; text-transform:uppercase; background:rgba(13,17,23,0.9); padding:7px 14px; border-radius:100px; border:1px solid var(--border); backdrop-filter:blur(8px); font-family:'Syne',sans-serif; }
+
+  /* ── HEADER ── */
+  header { text-align:center; padding:clamp(52px,8vw,80px) 16px clamp(20px,4vw,36px); position:relative; z-index:1; }
+  .header-eyebrow { font-size:0.65rem; letter-spacing:0.3em; text-transform:uppercase; color:var(--orange); margin-bottom:12px; }
+  h1 { font-family:'Crimson Pro',serif; font-size:clamp(2.4rem,10vw,6.5rem); font-weight:300; line-height:0.95; letter-spacing:-0.02em; }
+  h1 strong { font-weight:700; display:block; color:var(--orange2); }
+  .tagline { margin-top:14px; color:var(--muted); font-size:clamp(0.65rem,2vw,0.8rem); letter-spacing:0.2em; text-transform:uppercase; }
+  #translate-bar-container { padding:12px 0 0; }
+
+  /* ── FORM ── */
+  .form-wrap { max-width:680px; margin:32px auto 0; padding:0 14px; position:relative; z-index:1; }
+  .form-card { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:clamp(20px,4vw,32px); }
+
+  .form-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:16px; }
+  @media(max-width:500px) { .form-grid { grid-template-columns:1fr; } }
+
+  .field label { display:block; font-size:0.65rem; letter-spacing:0.18em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+  .field input, .field select {
+    width:100%; padding:11px 14px; background:rgba(255,255,255,0.04);
+    border:1px solid var(--border); border-radius:10px; color:var(--text);
+    font-family:'Syne',sans-serif; font-size:clamp(0.85rem,2.5vw,0.92rem);
+    outline:none; transition:border-color 0.2s;
+  }
+  .field input:focus, .field select:focus { border-color:var(--orange); }
+  .field input::placeholder { color:var(--muted); }
+  .field select option { background:var(--surface); }
+  .dest-field { grid-column:1 / -1; }
+  @media(max-width:500px) { .dest-field { grid-column:1; } }
+
+  .gen-btn { width:100%; padding:14px; background:linear-gradient(135deg,var(--orange),var(--orange2)); border:none; border-radius:12px; color:#0d1117; font-family:'Syne',sans-serif; font-size:0.95rem; font-weight:700; letter-spacing:0.05em; cursor:pointer; transition:all 0.25s; }
+  .gen-btn:hover { transform:translateY(-2px); box-shadow:0 12px 32px rgba(251,146,60,0.3); }
+  .gen-btn:active { transform:scale(0.99); }
+  .gen-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; box-shadow:none; }
+
+  /* Quick destinations */
+  .quick-dest { display:flex; flex-wrap:wrap; gap:6px; margin-top:14px; }
+  .dest-pill { padding:5px 13px; background:transparent; border:1px solid var(--border); border-radius:100px; color:var(--muted); font-size:0.72rem; cursor:pointer; transition:all 0.2s; font-family:'Syne',sans-serif; }
+  .dest-pill:hover { border-color:var(--orange); color:var(--orange); }
+
+  /* ── STATUS ── */
+  .status { text-align:center; padding:60px 16px; display:none; position:relative; z-index:1; }
+  .spinner { display:inline-block; width:40px; height:40px; border:2px solid rgba(251,146,60,0.15); border-top-color:var(--orange); border-radius:50%; animation:spin 0.9s linear infinite; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .status-text { margin-top:14px; color:var(--muted); font-size:0.82rem; letter-spacing:0.12em; text-transform:uppercase; }
+
+  /* ── RESULT ── */
+  .result { max-width:900px; margin:40px auto; padding:0 14px clamp(40px,8vw,80px); display:none; opacity:0; transform:translateY(20px); transition:opacity 0.5s ease,transform 0.5s ease; position:relative; z-index:1; }
+  .result.visible { opacity:1; transform:translateY(0); }
+
+  /* Trip header */
+  .trip-header { margin-bottom:32px; }
+  .trip-title { font-family:'Crimson Pro',serif; font-size:clamp(2rem,7vw,4rem); font-weight:300; line-height:1.1; }
+  .trip-title span { color:var(--orange2); font-style:italic; }
+  .trip-chips { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+  .chip { padding:5px 14px; background:var(--card-bg); border:1px solid var(--border); border-radius:100px; font-size:0.72rem; color:var(--sky); white-space:nowrap; }
+
+  /* Info grid */
+  .info-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:24px 0; }
+  @media(max-width:600px) { .info-grid { grid-template-columns:1fr; } }
+  .info-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px 16px; }
+  .info-label { font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--orange); margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+  .info-text { font-family:'Crimson Pro',serif; font-size:clamp(0.88rem,2.5vw,0.98rem); color:rgba(232,240,248,0.8); line-height:1.6; font-weight:300; }
+
+  /* Practical tips */
+  .tips-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:20px; margin-bottom:24px; }
+  .tips-title { font-size:0.65rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--orange); margin-bottom:14px; }
+  .tips-list { display:flex; flex-direction:column; gap:8px; }
+  .tip-item { display:flex; gap:10px; font-family:'Crimson Pro',serif; font-size:clamp(0.88rem,2.5vw,0.95rem); color:rgba(232,240,248,0.75); line-height:1.5; font-weight:300; }
+  .tip-dot { color:var(--orange); flex-shrink:0; margin-top:2px; }
+
+  /* Section divider */
+  .section-title { font-size:0.65rem; letter-spacing:0.25em; text-transform:uppercase; color:var(--orange); margin-bottom:20px; display:flex; align-items:center; gap:12px; }
+  .section-title::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,var(--border),transparent); }
+
+  /* Day cards */
+  .days-list { display:flex; flex-direction:column; gap:20px; }
+  .day-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+  .day-header { display:flex; align-items:center; gap:16px; padding:18px 22px; background:var(--surface2); border-bottom:1px solid var(--border); }
+  .day-number { font-family:'Crimson Pro',serif; font-size:2.8rem; font-weight:700; color:rgba(251,146,60,0.2); line-height:1; flex-shrink:0; width:52px; text-align:center; }
+  .day-info { flex:1; }
+  .day-num-label { font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted); }
+  .day-title { font-family:'Crimson Pro',serif; font-size:clamp(1rem,3vw,1.3rem); font-style:italic; color:var(--orange2); margin-top:2px; }
+
+  /* Activities */
+  .activities { padding:16px 22px; display:flex; flex-direction:column; gap:14px; }
+  .activity { display:flex; gap:14px; }
+  .act-time { font-size:0.7rem; color:var(--sky); letter-spacing:0.05em; min-width:40px; flex-shrink:0; padding-top:3px; font-weight:600; }
+  .act-body { flex:1; padding-bottom:14px; border-bottom:1px solid rgba(251,146,60,0.06); }
+  .activity:last-child .act-body { border-bottom:none; padding-bottom:0; }
+  .act-title { font-size:clamp(0.88rem,2.5vw,0.95rem); font-weight:600; color:var(--text); margin-bottom:4px; }
+  .act-desc { font-family:'Crimson Pro',serif; font-size:clamp(0.85rem,2.5vw,0.92rem); color:rgba(232,240,248,0.65); line-height:1.6; font-weight:300; }
+  .act-tip { margin-top:6px; padding:5px 10px; background:rgba(251,146,60,0.06); border-left:2px solid var(--orange); border-radius:0 6px 6px 0; font-size:0.78rem; color:rgba(251,146,60,0.8); font-family:'Crimson Pro',serif; font-style:italic; }
+
+  /* Meals */
+  .meals-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:0 22px 18px; }
+  @media(max-width:400px) { .meals-row { grid-template-columns:1fr; } }
+  .meal-item { background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:10px; padding:10px 14px; }
+  .meal-label { font-size:0.6rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
+  .meal-text { font-family:'Crimson Pro',serif; font-size:clamp(0.82rem,2.5vw,0.88rem); color:rgba(232,240,248,0.7); line-height:1.4; font-weight:300; }
+
+  .error-msg { text-align:center; color:#ef4444; font-size:0.88rem; padding:20px; line-height:1.6; }
+</style>
+</head>
+<body>
+<a href="../index.html" class="back">← Hub</a>
+
+<header>
+  <div class="header-eyebrow">AI-Powered</div>
+  <h1>Travel<strong>Planner</strong></h1>
+  <p class="tagline">Day-by-day itineraries · Any destination · Any duration</p>
+  <div id="translate-bar-container"></div>
+</header>
+
+<div class="form-wrap">
+  <div class="form-card">
+    <div class="form-grid">
+      <div class="field dest-field">
+        <label>Destination</label>
+        <input type="text" id="destination" placeholder="e.g. Tokyo, Bali, New York..."/>
+      </div>
+      <div class="field">
+        <label>Days</label>
+        <input type="number" id="days" value="5" min="1" max="14"/>
+      </div>
+      <div class="field">
+        <label>Travelers</label>
+        <input type="number" id="travelers" value="2" min="1" max="20"/>
+      </div>
+    </div>
+    <button class="gen-btn" id="gen-btn" onclick="generate()">✈ Generate Itinerary</button>
+    <div class="quick-dest">
+      <button class="dest-pill" onclick="quick('Tokyo, Japan')">🗼 Tokyo</button>
+      <button class="dest-pill" onclick="quick('Paris, France')">🥐 Paris</button>
+      <button class="dest-pill" onclick="quick('Bali, Indonesia')">🌴 Bali</button>
+      <button class="dest-pill" onclick="quick('New York, USA')">🗽 New York</button>
+      <button class="dest-pill" onclick="quick('Rome, Italy')">🏛 Rome</button>
+      <button class="dest-pill" onclick="quick('Marrakech, Morocco')">🕌 Marrakech</button>
+      <button class="dest-pill" onclick="quick('Kyoto, Japan')">⛩ Kyoto</button>
+      <button class="dest-pill" onclick="quick('Lisbon, Portugal')">🐟 Lisbon</button>
+    </div>
+  </div>
+</div>
+
+<div class="status" id="status">
+  <div class="spinner"></div>
+  <p class="status-text" id="status-text">Planning your trip…</p>
+</div>
+
+<div class="result" id="result"></div>
+
+<script src="../js/config.js"></script>
+<script src="../js/translate.js"></script>
+
+<script>
+
+  let rawData = null, currentLang = 'en';
+
+  renderTranslateBar('translate-bar-container', async (lang) => {
+    currentLang = lang;
+    if (rawData) await renderResult(rawData, lang);
+  });
+
+  function quick(dest) {
+    document.getElementById('destination').value = dest;
+    generate();
+  }
+
+  // ── Translation helpers ──────────────────────────────
+
+  async function renderResult(d, lang) {
+    const t = async (arr) => lang === 'en' ? arr : await translateTexts(arr, lang);
+
+    // Collect all translatable text
+    const destArr        = [d.destination];
+    const budgetArr      = [d.budget_estimate];
+    const accomArr       = [d.accommodation];
+    const transportArr   = [d.transport_tips];
+    const tipsArr        = d.practical_tips;
+
+    // Flatten day content for batch translation
+    const dayTitles      = d.itinerary.map(day => day.title);
+    const actTitles      = d.itinerary.flatMap(day => day.activities.map(a => a.title));
+    const actDescs       = d.itinerary.flatMap(day => day.activities.map(a => a.description));
+    const actTips        = d.itinerary.flatMap(day => day.activities.map(a => a.tip || ''));
+    const lunches        = d.itinerary.map(day => day.lunch);
+    const dinners        = d.itinerary.map(day => day.dinner);
+
+    let [tDest, tBudget, tAccom, tTransport, tTips,
+         tDayTitles, tActTitles, tActDescs, tActTips, tLunches, tDinners] =
+      await Promise.all([
+        t(destArr), t(budgetArr), t(accomArr), t(transportArr), t(tipsArr),
+        t(dayTitles), t(actTitles), t(actDescs), t(actTips), t(lunches), t(dinners)
+      ]);
+
+    // Rebuild structure with translated content
+    let actIdx = 0;
+    const days = d.itinerary.map((day, di) => {
+      const acts = day.activities.map((act, ai) => {
+        const idx = actIdx++;
+        return { ...act, title: tActTitles[idx], description: tActDescs[idx], tip: tActTips[idx] || null };
+      });
+      return { ...day, title: tDayTitles[di], activities: acts, lunch: tLunches[di], dinner: tDinners[di] };
+    });
+
+    // ── Render ──
+    const chipsHTML = `
+      <div class="chip">📅 ${d.days} days</div>
+      <div class="chip">👥 ${d.travelers} traveler${d.travelers > 1 ? 's' : ''}</div>
+      <div class="chip">💰 ${tBudget[0]}</div>`;
+
+    const infoHTML = `
+      <div class="info-card">
+        <div class="info-label">🏨 Accommodation</div>
+        <p class="info-text">${tAccom[0]}</p>
+      </div>
+      <div class="info-card">
+        <div class="info-label">🚌 Transport</div>
+        <p class="info-text">${tTransport[0]}</p>
+      </div>
+      <div class="info-card">
+        <div class="info-label">💡 Budget estimate</div>
+        <p class="info-text">${tBudget[0]}</p>
+      </div>`;
+
+    const tipsHTML = tTips.map(tip =>
+      `<div class="tip-item"><span class="tip-dot">◆</span><span>${tip}</span></div>`
+    ).join('');
+
+    const daysHTML = days.map(day => `
+      <div class="day-card">
+        <div class="day-header">
+          <div class="day-number">${String(day.day).padStart(2,'0')}</div>
+          <div class="day-info">
+            <div class="day-num-label">Day ${day.day}</div>
+            <div class="day-title">${day.title}</div>
+          </div>
+        </div>
+        <div class="activities">
+          ${day.activities.map(act => `
+            <div class="activity">
+              <span class="act-time">${act.time}</span>
+              <div class="act-body">
+                <div class="act-title">${act.title}</div>
+                <p class="act-desc">${act.description}</p>
+                ${act.tip ? `<div class="act-tip">💡 ${act.tip}</div>` : ''}
+              </div>
+            </div>`).join('')}
+        </div>
+        <div class="meals-row">
+          <div class="meal-item">
+            <div class="meal-label">🍽 Lunch</div>
+            <p class="meal-text">${day.lunch}</p>
+          </div>
+          <div class="meal-item">
+            <div class="meal-label">🌙 Dinner</div>
+            <p class="meal-text">${day.dinner}</p>
+          </div>
+        </div>
+      </div>`).join('');
+
+    const el = document.getElementById('result');
+    el.innerHTML = `
+      <div class="trip-header">
+        <div class="trip-title">Your trip to <span>${tDest[0]}</span></div>
+        <div class="trip-chips">${chipsHTML}</div>
+      </div>
+      <div class="info-grid">${infoHTML}</div>
+      <div class="tips-card">
+        <div class="tips-title">✦ Practical Tips</div>
+        <div class="tips-list">${tipsHTML}</div>
+      </div>
+      <div class="section-title">Daily Itinerary</div>
+      <div class="days-list">${daysHTML}</div>`;
+
+    el.style.display = 'block';
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('visible')));
+  }
+
+  // ── Generate ─────────────────────────────────────────
+
+  const statusMessages = [
+    'Researching your destination…',
+    'Crafting your day-by-day itinerary…',
+    'Finding the best restaurants…',
+    'Adding insider tips…',
+    'Almost ready…'
+  ];
+
+  async function generate() {
+    const destination = document.getElementById('destination').value.trim();
+    const days        = parseInt(document.getElementById('days').value);
+    const travelers   = parseInt(document.getElementById('travelers').value);
+
+    if (!destination) { document.getElementById('destination').focus(); return; }
+    if (isNaN(days) || days < 1 || days > 14) { alert('Days must be between 1 and 14.'); return; }
+
+    const btn = document.getElementById('gen-btn');
+    btn.disabled = true; btn.textContent = '⏳ Planning…';
+
+    const el = document.getElementById('result');
+    el.classList.remove('visible'); el.style.display = 'none';
+    rawData = null;
+
+    // Cycle through status messages while loading
+    const statusEl = document.getElementById('status-text');
+    let msgIdx = 0;
+    const statusEl2 = document.getElementById('status');
+    statusEl2.style.display = 'block';
+    const msgInterval = setInterval(() => {
+      msgIdx = (msgIdx + 1) % statusMessages.length;
+      statusEl.textContent = statusMessages[msgIdx];
+    }, 2500);
+
+    try {
+      const r = await fetch(`${API}/api/travel-planner`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ destination, days, travelers }),
+      });
+      if (!r.ok) { const e = await r.json(); throw new Error(e.detail || `HTTP ${r.status}`); }
+      rawData = await r.json();
+      clearInterval(msgInterval);
+      statusEl2.style.display = 'none';
+      await renderResult(rawData, currentLang);
+    } catch(e) {
+      clearInterval(msgInterval);
+      statusEl2.style.display = 'none';
+      el.innerHTML = `<p class="error-msg">⚠️ ${e.message || 'Could not connect to backend.'}</p>`;
+      el.style.display = 'block';
+      requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('visible')));
+    }
+
+    btn.disabled = false; btn.textContent = '✈ Generate Itinerary';
+  }
+
+  document.getElementById('destination').addEventListener('keypress', e => e.key === 'Enter' && generate());
+</script>
+</body>
+</html>

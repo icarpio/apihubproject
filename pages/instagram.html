@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Instagram AI · Post Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:#0a0a0f;--surface:#13131a;--card:#1a1a26;--border:rgba(255,255,255,0.07);
+    --ig1:#f58529;--ig2:#dd2a7b;--ig3:#8134af;--ig4:#515bd4;
+    --text:#f0f0f5;--muted:rgba(240,240,245,0.4);--green:#22c55e;
+    --grad:linear-gradient(135deg,var(--ig1),var(--ig2),var(--ig3));
+  }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;overflow-x:hidden}
+  body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 15% 15%,rgba(245,133,41,0.07) 0%,transparent 50%),radial-gradient(ellipse at 85% 85%,rgba(129,52,175,0.09) 0%,transparent 50%);pointer-events:none;z-index:0}
+  .back{position:fixed;top:14px;left:14px;z-index:100;text-decoration:none;color:var(--muted);font-size:0.7rem;letter-spacing:.15em;text-transform:uppercase;background:rgba(19,19,26,.92);padding:7px 14px;border-radius:100px;border:1px solid var(--border);transition:color .2s}
+  .back:hover{color:var(--text)}
+  header{text-align:center;padding:clamp(64px,10vw,88px) 16px 0;position:relative;z-index:1}
+  .ig-logo{display:inline-flex;align-items:center;justify-content:center;width:58px;height:58px;border-radius:18px;background:var(--grad);margin-bottom:18px;font-size:1.9rem;box-shadow:0 8px 32px rgba(221,42,123,.3)}
+  h1{font-family:'Syne',sans-serif;font-size:clamp(2.2rem,8vw,5rem);font-weight:800;line-height:1;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px}
+  .tagline{color:var(--muted);font-size:clamp(.72rem,2vw,.82rem);letter-spacing:.18em;text-transform:uppercase}
+  .main{max-width:920px;margin:40px auto 80px;padding:0 16px;position:relative;z-index:1}
+  .workspace{display:grid;grid-template-columns:1fr;gap:18px}
+  .workspace.split{grid-template-columns:1fr 1fr}
+  @media(max-width:700px){.workspace.split{grid-template-columns:1fr}}
+  /* Upload panel */
+  .upload-panel{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:clamp(20px,4vw,32px);display:flex;flex-direction:column;gap:18px}
+  .dropzone{border:2px dashed rgba(221,42,123,.25);border-radius:16px;min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;cursor:pointer;transition:all .25s;position:relative;overflow:hidden;background:rgba(255,255,255,.02)}
+  .dropzone:hover,.dropzone.dragover{border-color:rgba(221,42,123,.6);background:rgba(221,42,123,.04)}
+  .dropzone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+  .dz-icon{font-size:2.8rem;line-height:1}
+  .dz-title{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;color:var(--text)}
+  .dz-sub{font-size:.75rem;color:var(--muted);text-align:center}
+  .dz-badge{padding:4px 12px;background:rgba(221,42,123,.12);border:1px solid rgba(221,42,123,.25);border-radius:100px;font-size:.7rem;color:var(--ig2)}
+  .preview-wrap{position:relative;border-radius:14px;overflow:hidden;display:none}
+  .preview-wrap img{width:100%;max-height:380px;object-fit:cover;display:block;border-radius:14px}
+  .preview-overlay{position:absolute;inset:0;background:rgba(0,0,0,0);transition:background .2s;display:flex;align-items:center;justify-content:center;border-radius:14px}
+  .preview-wrap:hover .preview-overlay{background:rgba(0,0,0,.45)}
+  .change-btn{opacity:0;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:100px;color:#fff;padding:8px 18px;font-size:.78rem;cursor:pointer;transition:opacity .2s;font-family:'Inter',sans-serif;backdrop-filter:blur(8px)}
+  .preview-wrap:hover .change-btn{opacity:1}
+  .analyzing-overlay{position:absolute;inset:0;background:rgba(10,10,15,.75);border-radius:14px;display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;backdrop-filter:blur(4px)}
+  .analyzing-overlay.visible{display:flex}
+  .analyzing-text{font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:.1em}
+  .options-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:480px){.options-row{grid-template-columns:1fr}}
+  .opt-group{display:flex;flex-direction:column;gap:6px}
+  .opt-label{font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+  .opt-select{padding:11px 14px;background:var(--card);border:1px solid var(--border);border-radius:11px;font-family:'Inter',sans-serif;font-size:.88rem;color:var(--text);outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(240,240,245,0.3)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:30px;transition:border-color .2s}
+  .opt-select:focus{border-color:rgba(221,42,123,.5)}
+  .music-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:var(--card);border:1px solid var(--border);border-radius:11px}
+  .music-toggle-label{font-size:.88rem;color:var(--text);display:flex;align-items:center;gap:8px}
+  .toggle{position:relative;width:42px;height:23px}
+  .toggle input{opacity:0;width:0;height:0}
+  .slider{position:absolute;inset:0;background:rgba(255,255,255,.08);border-radius:100px;cursor:pointer;transition:.3s;border:1px solid var(--border)}
+  .slider::before{content:'';position:absolute;width:17px;height:17px;left:2px;top:2px;background:#fff;border-radius:50%;transition:.3s}
+  input:checked+.slider{background:var(--grad);border-color:transparent}
+  input:checked+.slider::before{transform:translateX(19px)}
+  .gen-btn{width:100%;padding:15px;background:var(--grad);border:none;border-radius:14px;color:#fff;font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:all .25s;letter-spacing:.03em;box-shadow:0 4px 24px rgba(221,42,123,.3)}
+  .gen-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 32px rgba(221,42,123,.45)}
+  .gen-btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+  /* Result */
+  .result-panel{display:none;flex-direction:column;gap:14px}
+  .result-panel.visible{display:flex}
+  .res-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:clamp(18px,4vw,26px)}
+  .res-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .res-title{font-family:'Syne',sans-serif;font-size:.7rem;font-weight:800;letter-spacing:.2em;text-transform:uppercase;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .copy-btn{padding:5px 13px;background:transparent;border:1px solid var(--border);border-radius:100px;color:var(--muted);font-size:.7rem;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif}
+  .copy-btn:hover{border-color:var(--ig2);color:var(--text)}
+  .copy-btn.copied{border-color:var(--green);color:var(--green)}
+  .caption-text{font-size:clamp(.9rem,2.5vw,.98rem);line-height:1.78;color:var(--text);white-space:pre-wrap}
+  .hashtags-row{display:flex;flex-wrap:wrap;gap:8px}
+  .hashtag{padding:7px 16px;background:linear-gradient(135deg,rgba(245,133,41,.1),rgba(129,52,175,.1));border:1px solid rgba(221,42,123,.2);border-radius:100px;font-size:.85rem;color:var(--ig2);cursor:pointer;transition:all .2s;font-weight:500}
+  .hashtag:hover{background:linear-gradient(135deg,rgba(245,133,41,.22),rgba(129,52,175,.22));border-color:var(--ig2)}
+  .music-list{display:flex;flex-direction:column;gap:10px}
+  .music-item{display:flex;gap:13px;padding:13px;background:var(--card);border-radius:12px;border:1px solid var(--border);align-items:flex-start}
+  .music-num{width:24px;height:24px;background:rgba(221,42,123,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:var(--ig2);flex-shrink:0;margin-top:1px}
+  .music-title{font-weight:600;font-size:.9rem;color:var(--text);margin-bottom:2px}
+  .music-artist{font-size:.75rem;color:var(--muted);margin-bottom:5px}
+  .music-reason{font-size:.76rem;color:rgba(240,240,245,.55);line-height:1.5;font-style:italic}
+  .copy-all-btn{width:100%;padding:13px;background:transparent;border:1px solid var(--border);border-radius:14px;color:var(--muted);font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:.05em}
+  .copy-all-btn:hover{border-color:var(--ig2);color:var(--text)}
+  .copy-all-btn.copied{border-color:var(--green);color:var(--green)}
+  .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:8px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<a href="../index.html" class="back">← Hub</a>
+<header>
+  <div class="ig-logo">📸</div>
+  <h1>Instagram AI</h1>
+  <p class="tagline">Sube tu foto · La IA analiza y genera el post perfecto</p>
+</header>
+<div class="main">
+  <div class="workspace" id="workspace">
+    <!-- Upload -->
+    <div class="upload-panel">
+      <div id="dropzone-wrap">
+        <div class="dropzone" id="dropzone">
+          <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp" onchange="handleFile(event)"/>
+          <div class="dz-icon">🖼️</div>
+          <div class="dz-title">Arrastra tu foto aquí</div>
+          <div class="dz-sub">o haz clic para seleccionar</div>
+          <div class="dz-badge">JPG · PNG · WebP · máx. 10 MB</div>
+        </div>
+      </div>
+      <div class="preview-wrap" id="preview-wrap">
+        <img id="preview-img" src="" alt="Preview"/>
+        <div class="preview-overlay">
+          <button class="change-btn" onclick="resetImage()">🔄 Cambiar foto</button>
+        </div>
+        <div class="analyzing-overlay" id="analyzing-overlay">
+          <span class="spinner" style="width:24px;height:24px;border-width:3px"></span>
+          <span class="analyzing-text">Analizando imagen…</span>
+        </div>
+      </div>
+      <div class="options-row">
+        <div class="opt-group">
+          <span class="opt-label">Idioma del post</span>
+          <select class="opt-select" id="language">
+            <option value="es">🇪🇸 Español</option>
+            <option value="en">🇺🇸 English</option>
+          </select>
+        </div>
+        <div class="opt-group">
+          <span class="opt-label">Música</span>
+          <div class="music-toggle-row">
+            <div class="music-toggle-label">🎵 Recomendar</div>
+            <label class="toggle"><input type="checkbox" id="music-toggle"/><span class="slider"></span></label>
+          </div>
+        </div>
+      </div>
+      <button class="gen-btn" id="gen-btn" onclick="generate()" disabled>📸 Analizar foto y generar post</button>
+    </div>
+    <!-- Result -->
+    <div class="result-panel" id="result-panel">
+      <div class="res-card">
+        <div class="res-header"><div class="res-title">📝 Caption</div><button class="copy-btn" id="copy-caption" onclick="copyCaption()">Copiar</button></div>
+        <div class="caption-text" id="caption-text"></div>
+      </div>
+      <div class="res-card">
+        <div class="res-header"><div class="res-title"># Hashtags</div><button class="copy-btn" id="copy-tags" onclick="copyHashtags()">Copiar</button></div>
+        <div class="hashtags-row" id="hashtags-row"></div>
+      </div>
+      <div class="res-card" id="music-card" style="display:none">
+        <div class="res-header"><div class="res-title">🎵 Música recomendada</div></div>
+        <div class="music-list" id="music-list"></div>
+      </div>
+      <button class="copy-all-btn" id="copy-all" onclick="copyAll()">📋 Copiar caption + hashtags</button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/config.js"></script>
+<script>
+  const API = CONFIG.API_URL; 
+
+  let currentFile=null,lastResult=null;
+  const dz=document.getElementById('dropzone');
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dragover')});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('dragover'));
+  dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f)loadFile(f)});
+  function handleFile(e){const f=e.target.files[0];if(f)loadFile(f)}
+  function loadFile(file){
+    if(!file.type.startsWith('image/'))return alert('Por favor sube una imagen.');
+    if(file.size>10*1024*1024)return alert('La imagen es demasiado grande (máx. 10 MB).');
+    currentFile=file;
+    const reader=new FileReader();
+    reader.onload=e=>{
+      document.getElementById('preview-img').src=e.target.result;
+      document.getElementById('dropzone-wrap').style.display='none';
+      document.getElementById('preview-wrap').style.display='block';
+      document.getElementById('gen-btn').disabled=false;
+    };
+    reader.readAsDataURL(file);
+  }
+  function resetImage(){
+    currentFile=null;
+    document.getElementById('file-input').value='';
+    document.getElementById('preview-img').src='';
+    document.getElementById('preview-wrap').style.display='none';
+    document.getElementById('dropzone-wrap').style.display='block';
+    document.getElementById('gen-btn').disabled=true;
+    document.getElementById('result-panel').classList.remove('visible');
+    document.getElementById('workspace').classList.remove('split');
+  }
+  async function generate(){
+    if(!currentFile)return;
+    const btn=document.getElementById('gen-btn');
+    btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Analizando con IA…';
+    document.getElementById('analyzing-overlay').classList.add('visible');
+    const fd=new FormData();
+    fd.append('image',currentFile);
+    fd.append('language',document.getElementById('language').value);
+    fd.append('music',document.getElementById('music-toggle').checked?'true':'false');
+    try{
+      const r=await fetch(`${API}/api/instagram`,{method:'POST',body:fd});
+      if(!r.ok){const e=await r.json();throw new Error(e.detail||`HTTP ${r.status}`);}
+      lastResult=await r.json();
+      renderResult(lastResult);
+    }catch(e){alert('Error: '+e.message);}
+    document.getElementById('analyzing-overlay').classList.remove('visible');
+    btn.disabled=false;btn.innerHTML='📸 Generar de nuevo';
+  }
+  function renderResult(data){
+    document.getElementById('caption-text').textContent=data.caption;
+    document.getElementById('hashtags-row').innerHTML=data.hashtags.map(h=>`<span class="hashtag" onclick="copyTag('#${h}')" title="Copiar">#${esc(h)}</span>`).join('');
+    const mc=document.getElementById('music-card');
+    if(data.music?.length){
+      mc.style.display='block';
+      document.getElementById('music-list').innerHTML=data.music.map((m,i)=>`<div class="music-item"><div class="music-num">${i+1}</div><div><div class="music-title">${esc(m.title)}</div><div class="music-artist">${esc(m.artist)}</div><div class="music-reason">${esc(m.reason)}</div></div></div>`).join('');
+    }else{mc.style.display='none';}
+    ['copy-caption','copy-tags'].forEach(id=>{const el=document.getElementById(id);el.classList.remove('copied');el.textContent='Copiar';});
+    const ca=document.getElementById('copy-all');ca.classList.remove('copied');ca.textContent='📋 Copiar caption + hashtags';
+    document.getElementById('result-panel').classList.add('visible');
+    document.getElementById('workspace').classList.add('split');
+    document.getElementById('result-panel').scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+  function copyCaption(){if(!lastResult)return;navigator.clipboard.writeText(lastResult.caption);flash('copy-caption','✓ Copiado');}
+  function copyHashtags(){if(!lastResult)return;navigator.clipboard.writeText(lastResult.hashtags.map(h=>'#'+h).join(' '));flash('copy-tags','✓ Copiados');}
+  function copyTag(tag){navigator.clipboard.writeText(tag);}
+  function copyAll(){
+    if(!lastResult)return;
+    navigator.clipboard.writeText(lastResult.caption+'\n\n'+lastResult.hashtags.map(h=>'#'+h).join(' '));
+    const el=document.getElementById('copy-all');el.classList.add('copied');el.textContent='✓ ¡Copiado todo!';
+    setTimeout(()=>{el.classList.remove('copied');el.textContent='📋 Copiar caption + hashtags';},2500);
+  }
+  function flash(id,text){const el=document.getElementById(id);const o=el.textContent;el.textContent=text;el.classList.add('copied');setTimeout(()=>{el.textContent=o;el.classList.remove('copied');},2000);}
+  function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Noticias · API Ninjas Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:       #f8f6f1;
+    --surface:  #ffffff;
+    --border:   rgba(30,20,10,0.1);
+    --ink:      #1a1208;
+    --muted:    rgba(26,18,8,0.42);
+    --accent:   #c0392b;
+    --accent2:  #e74c3c;
+    --tag-bg:   rgba(192,57,43,0.08);
+    --shadow:   0 2px 20px rgba(26,18,8,0.08);
+    --positive: #166534;
+    --negative: #991b1b;
+    --neutral:  rgba(26,18,8,0.4);
+  }
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  body { min-height:100vh; background:var(--bg); color:var(--ink); font-family:'Inter',sans-serif; }
+  body::before { content:''; position:fixed; inset:0;
+    background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%231a1208' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    pointer-events:none; z-index:0; }
+
+  .back { position:fixed; top:12px; left:12px; z-index:100; text-decoration:none; color:var(--accent); font-size:0.7rem; letter-spacing:0.15em; text-transform:uppercase; background:rgba(248,246,241,0.95); padding:6px 14px; border-radius:100px; border:1px solid var(--border); font-weight:600; }
+
+  /* ── MASTHEAD ── */
+  .masthead { text-align:center; padding:clamp(50px,8vw,70px) 16px clamp(16px,3vw,24px); position:relative; z-index:1; border-bottom:3px double var(--border); margin-bottom:0; }
+  .masthead-date { font-size:0.68rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
+  h1 { font-family:'Playfair Display',serif; font-size:clamp(3rem,12vw,8rem); font-weight:900; line-height:0.9; color:var(--ink); margin-bottom:8px; }
+  .masthead-sub { font-size:0.72rem; letter-spacing:0.18em; text-transform:uppercase; color:var(--muted); border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding:8px 0; margin:12px auto; max-width:500px; }
+
+  /* ── CONTROLS ── */
+  .controls-bar { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:10px; padding:16px; background:var(--surface); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10; box-shadow:0 2px 12px rgba(26,18,8,0.06); }
+  .ctrl-group { display:flex; align-items:center; gap:7px; }
+  .ctrl-label { font-size:0.65rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); }
+  .ctrl-select { padding:7px 12px; background:var(--bg); border:1px solid var(--border); border-radius:8px; font-family:'Inter',sans-serif; font-size:0.82rem; color:var(--ink); outline:none; cursor:pointer; transition:border-color 0.2s; }
+  .ctrl-select:focus { border-color:var(--accent); }
+  .refresh-btn { padding:7px 16px; background:var(--accent); border:none; border-radius:8px; color:#fff; font-family:'Inter',sans-serif; font-size:0.78rem; font-weight:600; cursor:pointer; transition:all 0.2s; }
+  .refresh-btn:hover { background:var(--accent2); }
+  .refresh-btn:disabled { opacity:0.5; cursor:not-allowed; }
+
+  /* ── GRID ── */
+  .news-wrap { max-width:1100px; margin:0 auto; padding:clamp(20px,4vw,36px) 16px clamp(50px,8vw,80px); position:relative; z-index:1; }
+
+  /* Loading / empty */
+  .loading { text-align:center; padding:60px 20px; color:var(--muted); font-size:0.85rem; letter-spacing:0.1em; }
+  .loading-dots span { animation:dot 1.2s ease-in-out infinite; display:inline-block; }
+  .loading-dots span:nth-child(2){animation-delay:.2s} .loading-dots span:nth-child(3){animation-delay:.4s}
+  @keyframes dot { 0%,100%{opacity:.3} 50%{opacity:1} }
+  .empty { text-align:center; padding:60px; color:var(--muted); font-family:'Playfair Display',serif; font-style:italic; font-size:1.2rem; }
+  .error-msg { text-align:center; padding:40px; color:var(--accent); font-size:0.9rem; background:#fff5f5; border-radius:12px; border:1px solid rgba(192,57,43,0.2); }
+
+  /* Articles grid — newspaper style */
+  .articles-grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:0; }
+  @media(max-width:768px) { .articles-grid { grid-template-columns:1fr; } }
+  @media(min-width:769px) and (max-width:1024px) { .articles-grid { grid-template-columns:1fr 1fr; } }
+
+  /* Featured first article */
+  .article-card:first-child { grid-column: 1 / -1; display:grid; grid-template-columns:1fr 1fr; gap:0; border-bottom:2px solid var(--ink); }
+  @media(max-width:768px) { .article-card:first-child { grid-template-columns:1fr; } }
+  .article-card:first-child .card-image { border-right:1px solid var(--border); }
+  .article-card:first-child .card-body { padding:clamp(20px,4vw,32px); }
+  .article-card:first-child .card-title { font-size:clamp(1.4rem,4vw,2.2rem); -webkit-line-clamp:3; }
+  .article-card:first-child .card-summary { display:block !important; font-size:0.92rem; }
+
+  .article-card { border:1px solid var(--border); border-top:none; background:var(--surface); transition:background 0.2s; cursor:pointer; }
+  .article-card:not(:first-child):hover { background:#fafaf7; }
+  .article-card:nth-child(3n+2):not(:first-child) { border-left:none; border-right:none; }
+
+  .card-image { width:100%; aspect-ratio:16/9; overflow:hidden; background:#f0ede6; }
+  .card-image img { width:100%; height:100%; object-fit:cover; transition:transform 0.4s; }
+  .article-card:hover .card-image img { transform:scale(1.03); }
+  .no-image { width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:2rem; opacity:0.3; background:linear-gradient(135deg,#f0ede6,#e8e4db); }
+
+  .card-body { padding:clamp(14px,3vw,20px); display:flex; flex-direction:column; gap:8px; }
+  .card-source-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .card-source { font-size:0.65rem; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:var(--accent); }
+  .card-date { font-size:0.65rem; color:var(--muted); }
+  .sentiment-badge { padding:2px 7px; border-radius:100px; font-size:0.6rem; letter-spacing:0.1em; text-transform:uppercase; font-weight:600; }
+  .sentiment-badge.pos { background:rgba(22,101,52,0.1); color:var(--positive); }
+  .sentiment-badge.neg { background:rgba(153,27,27,0.1); color:var(--negative); }
+
+  .card-title { font-family:'Playfair Display',serif; font-size:clamp(1rem,2.5vw,1.15rem); font-weight:700; line-height:1.3; color:var(--ink); display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+  .card-summary { font-size:0.82rem; color:var(--muted); line-height:1.65; display:none; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+
+  .card-link { display:inline-flex; align-items:center; gap:4px; font-size:0.7rem; font-weight:600; color:var(--accent); text-decoration:none; letter-spacing:0.05em; text-transform:uppercase; margin-top:auto; padding-top:4px; }
+  .card-link:hover { color:var(--accent2); }
+
+  /* Count badge */
+  .count-badge { font-size:0.72rem; color:var(--muted); text-align:right; margin-bottom:12px; letter-spacing:0.05em; }
+</style>
+</head>
+<body>
+<a href="../index.html" class="back">← Hub</a>
+
+<div class="masthead">
+  <div class="masthead-date" id="masthead-date"></div>
+  <h1>The News</h1>
+  <div class="masthead-sub">Noticias del mundo</div>
+</div>
+
+<div class="controls-bar">
+  <div class="ctrl-group">
+    <span class="ctrl-label">País</span>
+    <select class="ctrl-select" id="country" onchange="loadNews()">
+      <option value="es">🇪🇸 España</option>
+      <option value="us">🇺🇸 USA</option>
+      <option value="gb">🇬🇧 UK</option>
+      <option value="fr">🇫🇷 Francia</option>
+      <option value="de">🇩🇪 Alemania</option>
+      <option value="it">🇮🇹 Italia</option>
+      <option value="mx">🇲🇽 México</option>
+      <option value="ar">🇦🇷 Argentina</option>
+      <option value="br">🇧🇷 Brasil</option>
+      <option value="jp">🇯🇵 Japón</option>
+    </select>
+  </div>
+  <div class="ctrl-group">
+    <span class="ctrl-label">Idioma</span>
+    <select class="ctrl-select" id="language" onchange="loadNews()">
+      <option value="es">Español</option>
+      <option value="en">English</option>
+      <option value="fr">Français</option>
+      <option value="de">Deutsch</option>
+      <option value="it">Italiano</option>
+      <option value="pt">Português</option>
+      <option value="ja">日本語</option>
+    </select>
+  </div>
+  <button class="refresh-btn" id="refresh-btn" onclick="loadNews()">↺ Actualizar</button>
+</div>
+
+<div class="news-wrap">
+  <div id="articles-container">
+    <div class="loading"><div class="loading-dots"><span>●</span><span>●</span><span>●</span></div><br>Cargando noticias…</div>
+  </div>
+</div>
+
+
+<script src="../js/config.js"></script>
+<script>
+  const API = CONFIG.API_URL; 
+
+
+  // Set today's date in masthead
+  document.getElementById('masthead-date').textContent = new Date().toLocaleDateString('es-ES', {
+    weekday:'long', year:'numeric', month:'long', day:'numeric'
+  }).replace(/^\w/, c => c.toUpperCase());
+
+  function sentimentLabel(val) {
+    if (val === null || val === undefined) return '';
+    if (val > 0.1) return '<span class="sentiment-badge pos">↑ Positivo</span>';
+    if (val < -0.1) return '<span class="sentiment-badge neg">↓ Negativo</span>';
+    return '';
+  }
+
+  function formatDate(str) {
+    if (!str) return '';
+    try {
+      return new Date(str).toLocaleDateString('es-ES', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+    } catch { return str; }
+  }
+
+  function renderArticles(articles) {
+    if (!articles.length) {
+      document.getElementById('articles-container').innerHTML = '<div class="empty">No se encontraron noticias para esta selección.</div>';
+      return;
+    }
+
+    const countHtml = `<div class="count-badge">${articles.length} artículos encontrados</div>`;
+    const cardsHtml = articles.map((a, i) => {
+      const imgHtml = a.image
+        ? `<div class="card-image"><img src="${escHtml(a.image)}" alt="" loading="lazy" onerror="this.parentElement.innerHTML='<div class=no-image>📰</div>'"/></div>`
+        : `<div class="card-image"><div class="no-image">📰</div></div>`;
+      return `
+        <div class="article-card" onclick="window.open('${escHtml(a.url)}','_blank')">
+          ${imgHtml}
+          <div class="card-body">
+            <div class="card-source-row">
+              <span class="card-source">${escHtml(a.source)}</span>
+              <span class="card-date">${formatDate(a.published_at)}</span>
+              ${sentimentLabel(a.sentiment)}
+            </div>
+            <div class="card-title">${escHtml(a.title)}</div>
+            ${a.summary ? `<div class="card-summary">${escHtml(a.summary)}…</div>` : ''}
+            <a class="card-link" href="${escHtml(a.url)}" target="_blank" onclick="event.stopPropagation()">Leer más →</a>
+          </div>
+        </div>`;
+    }).join('');
+
+    document.getElementById('articles-container').innerHTML = countHtml + `<div class="articles-grid">${cardsHtml}</div>`;
+  }
+
+  async function loadNews() {
+    const btn = document.getElementById('refresh-btn');
+    btn.disabled = true; btn.textContent = '…';
+    document.getElementById('articles-container').innerHTML = '<div class="loading"><div class="loading-dots"><span>●</span><span>●</span><span>●</span></div><br>Cargando noticias…</div>';
+
+    const country  = document.getElementById('country').value;
+    const language = document.getElementById('language').value;
+
+    try {
+      const r = await fetch(`${API}/api/news?country=${country}&language=${language}&headlines_only=false`);
+      if (!r.ok) { const e = await r.json(); throw new Error(e.detail || `HTTP ${r.status}`); }
+      const data = await r.json();
+      renderArticles(data.articles || []);
+    } catch(e) {
+      document.getElementById('articles-container').innerHTML = `<div class="error-msg">⚠️ ${e.message}</div>`;
+    }
+
+    btn.disabled = false; btn.textContent = '↺ Actualizar';
+  }
+
+  function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  loadNews();
+</script>
+</body>
+</html>
